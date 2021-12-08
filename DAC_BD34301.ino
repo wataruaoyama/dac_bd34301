@@ -65,7 +65,7 @@ void setup() {
   
   delay(500);
 
-  i2cWrite(CPLD_ADR, 0x00, 0x10); // 入力ソースをXHに変更
+  //i2cWrite(CPLD_ADR, 0x00, 0x10); // 入力ソースをXHに変更
   i2cWrite(CPLD_ADR, 0x03, 0x01); // MCLKの停止を解除
   i2cWrite(CPLD_ADR, 0x03, 0x81); // RESETB解除　
 

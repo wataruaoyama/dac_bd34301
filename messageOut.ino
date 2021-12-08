@@ -171,19 +171,19 @@ void displayInputInterface() {
   // 入力切替トグルスイッチのカウント値が'1'の場合
   if ( count == 1 ) {
     // USBインターフェースの選択を表示
-    oled.print("[X]");
+    oled.print("[U]");
   }
   // カウント値が'2'の場合
   else if ( count == 2 ) {
     // RJ45コネクタ(LANケーブル経由のI2Sインターフェース)の選択を表示
-    oled.print("[U]");
+    oled.print("[R]");
   }
   // カウント値が'3'の場合
   else if (( count == 3 ) || (count == 0)){
     // XHコネクタ(I2Sインターフェース)の選択を表示
-    oled.print("[R]");
+    oled.print("[X]");
   }
   else {
-    oled.print("[X]");
+    oled.print("[U]");
   }
 }
