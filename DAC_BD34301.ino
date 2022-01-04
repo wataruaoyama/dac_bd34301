@@ -3,12 +3,17 @@
 #include <U8g2lib.h>
 #include <Preferences.h>
 #include "BD34301.h"
+#include "IRremote.h"
 
 #define SDA 21
 #define SCL 22
 
 SO2002A_I2C oled(0x3D);
 U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, SCL, SDA, /* reset=*/ U8X8_PIN_NONE);
+
+/*-----( Declare objects )-----*/
+IRrecv irrecv(receiver);     // create instance of 'irrecv'
+decode_results results;      // create instance of 'decode_results'
 
 void setup() {
   pinMode(upSwitch,INPUT);
@@ -78,6 +83,7 @@ void setup() {
   // デバッグ用のLEDを点灯
   digitalWrite(pwLED,HIGH);
   //readReg(0);
+  irrecv.enableIRIn(); // Start the receiver
 }
 
 void loop() {
@@ -110,16 +116,18 @@ void loop() {
   }
 
   uint16_t FSR = detectFS();
-//  Serial.print("FSR = "); Serial.println(FSR);
+  //Serial.print("FSR = "); Serial.println(FSR);
   uint8_t BCK16 = detectBitClock();
-//  Serial.print("BCK16 = "); Serial.println(BCK16);
-//  Serial.print("volumeCounter ="); Serial.println(volumeCounter);
-  digiFil = changeFilter();
-  inputSource = inputSelection();
-//  Serial.print("Input Source = "); Serial.println(inputSource);
+  //Serial.print("BCK16 = "); Serial.println(BCK16);
+  //Serial.print("volumeCounter ="); Serial.println(volumeCounter);
+  /*digiFil = */changeFilter();
+  /*inputSource = */inputSelection();/* |*/ irReceiver();
+  //Serial.print("Input Source = "); Serial.println(inputSource);
   modeSwitch(FSR, digiFil, inputSource);
   messageOut(FSR, digiFil);
-//  readReg(0);
+
+  //readReg(0);
+  
   delay(10);
 }
 

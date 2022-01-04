@@ -1,4 +1,5 @@
-void initBD34301() {                // レジスタアドレス
+void initBD34301() {
+                                      // レジスタアドレス
 //  bd34301Chip0.Clk1 = 0x02;         // 0x04
 //  bd34301Chip0.Clk2 = 0x00;         // 0x06
 //  bd34301Chip0.AudIF1 = 0x0B;       // 0x10

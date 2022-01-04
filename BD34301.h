@@ -38,6 +38,8 @@
 #define Boot1 0xD0
 #define Boot2 0xD3
 
+int receiver = 32; // Signal Pin of IR receiver to Arduino Digital Pin 32
+
 Preferences preferences;
 int volumeValue; 
 
@@ -121,6 +123,7 @@ uint8_t inputSource = 1;
 //int DEM,DSDF;
 //bool DSDD;
 //bool GC0,GC1;
+bool mute = true;
 
 int prevMode = 1;
 int prevPcmRate = 0;

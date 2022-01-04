@@ -13,6 +13,7 @@
   電源オン時、ESP32のリセット時はUSBとなる.
  *************************************************************/
 uint8_t inputSelection() {
+
   bool state = digitalRead(inputSwitch);
   // スイッチが押されたことの変化があった場合
   if ( inswState == HIGH && state == LOW) {
