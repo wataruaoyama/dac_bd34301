@@ -71,12 +71,25 @@ void translateIR() // takes action based on IR code received
 void controlByIR()
 {
   uint8_t i;
+  static int irkey = 0;
+  static bool mute = true;
+  
   if (irrecv.decode(&results)) // have we received an IR signal?
 
   {
-    // translateIR();
+    //translateIR();
+    if (results.value == 0xFFFFFFFF) {
+      if ((irkey == 0x77E1504F) || (irkey == 0x8F705FA)) {
+        if (volumeCounter == 0) volumeCounter = volumeCounter;
+        else volumeCounter--;
+      }
+      else if ((irkey == 0x77E1304F) || (irkey == 0x8F700FF)) {
+        if (volumeCounter == 255) volumeCounter = volumeCounter;
+        else volumeCounter++;
+      }
+    }
     // リモコンのUPが押された場合
-    if ( (results.value == 0x77E1504F) || (results.value == 0x8F705FA) ) {
+    else if ( (results.value == 0x77E1504F) || (results.value == 0x8F705FA) ) {
     // volumeCounterの値が0だったら
       if ( volumeCounter == 0 ){
         // volumeCounterの値を保持する
@@ -101,6 +114,7 @@ void controlByIR()
         volumeCounter++;
       }    
     }
+    /* 入力ソースの切り替え*/
     // リモコンのLEFTが押されたら
     else if ( (results.value == 0x77E1904F) || (results.value == 0x8F708F7) ) {
       // countに1を足して
@@ -133,20 +147,24 @@ void controlByIR()
         //Serial.println("XH INPUT Selected");
       }
     }
+    /* デジタルフィルタの切り替え */
+    // リモコンのRIGHT（OptoSupplyは->）が押された場合
     else if ((results.value == 0x77E1604F) || (results.value == 0x8F701FE)) {
       if (digiFil == 1) digiFil = 0;
       else digiFil = 1;
     }
+    /* デジタルミュートコントロール */
+    // リモコンのMENU（OptoSupplyは"A"）が押された場合
     else if ((results.value == 0x77E1C04F) || (results.value == 0x8F71FE0)) {
       if (mute == true) {
         for(i=0; i<=ptrSlave; i++) {
-          i2cWrite(BD34301_CHIP[i], 0x2A, 0x00);
+          i2cWrite(BD34301_CHIP[i], Mute, 0x00);
           mute = false;
         }
       }
       else {
         for(i=0; i<=ptrSlave; i++) {
-          i2cWrite(BD34301_CHIP[i], 0x2A, 0x03);
+          i2cWrite(BD34301_CHIP[i], Mute, 0x03);
           mute = true;
         }
       }
@@ -154,9 +172,12 @@ void controlByIR()
     // DACのATTレジスタにvolumeCounterの値を設定する
     //uint8_t i;
     for(i=0; i<=ptrSlave; i++){
-      i2cWrite(BD34301_CHIP[i], 0x21, volumeCounter);
-      i2cWrite(BD34301_CHIP[i], 0x22, volumeCounter);
+      i2cWrite(BD34301_CHIP[i], Volume1, volumeCounter);
+      i2cWrite(BD34301_CHIP[i], Volume2, volumeCounter);
     }
     irrecv.resume(); // receive the next value
+    if (results.value != 0xFFFFFFFF) irkey = results.value;
+    //Serial.print("irkey = 0x"); Serial.println(irkey, HEX);
   }
+  delay(100);
 }

@@ -15,6 +15,7 @@
 uint8_t inputSelection() {
 
   bool state = digitalRead(inputSwitch);
+  static bool inswState = HIGH;
   // スイッチが押されたことの変化があった場合
   if ( inswState == HIGH && state == LOW) {
     // countに1を足して

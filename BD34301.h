@@ -47,8 +47,8 @@ int volumeCounter;
 int state;
 volatile int cnt = 3;
 volatile int count = 1;
-volatile int buttonState = HIGH;
-volatile int inswState = HIGH;
+//volatile int buttonState = HIGH;
+//volatile int inswState = HIGH;
 volatile int blynkModeButton;
 volatile int blynkMuteButton;
 
@@ -123,7 +123,7 @@ uint8_t inputSource = 1;
 //int DEM,DSDF;
 //bool DSDD;
 //bool GC0,GC1;
-bool mute = true;
+//bool mute = true;
 
 int prevMode = 1;
 int prevPcmRate = 0;
