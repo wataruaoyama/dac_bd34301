@@ -92,7 +92,7 @@ void initBD34301() {
     i2cWrite(BD34301_CHIP[i], Volume2, 0x00);
   
     /* ミュート遷移時間設定 */
-    i2cWrite(BD34301_CHIP[i], MuteTransitionTime, 0x48);
+    i2cWrite(BD34301_CHIP[i], MuteTransitionTime, 0x08);
   
     /* FIRフィルタ設定 */
     i2cWrite(BD34301_CHIP[i], FIRFilter1, 0x01);

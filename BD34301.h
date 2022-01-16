@@ -44,7 +44,7 @@ Preferences preferences;
 int volumeValue; 
 
 int volumeCounter;
-int state;
+//int state;
 volatile int cnt = 3;
 volatile int count = 1;
 //volatile int buttonState = HIGH;
@@ -125,11 +125,11 @@ uint8_t inputSource = 1;
 //bool GC0,GC1;
 //bool mute = true;
 
-int prevMode = 1;
-int prevPcmRate = 0;
-int prevDsdRate = 0;
-int prevFil = 1;
-uint8_t prevInputSource = 1;
+//int prevMode = 1;
+//int prevPcmRate = 0;
+//int prevDsdRate = 0;
+//int prevFil = 1;
+//uint8_t prevInputSource = 1;
 
 uint8_t HWCNF[10]; //{DEVNAME, INSEL, DIF, MONO_ST, DSDF, INPOL, DEM, OSR, HPC, PAC};
 uint8_t ptrSlave;

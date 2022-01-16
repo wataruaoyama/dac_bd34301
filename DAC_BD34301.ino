@@ -87,6 +87,7 @@ void setup() {
 }
 
 void loop() {
+  irReceiver();
   // Timer interrupt process
   if (timeCounter1 > 0) {
     portENTER_CRITICAL(&timerMux);
@@ -115,14 +116,13 @@ void loop() {
     preferences.end();
   }
 
-  uint16_t FSR = detectFS();
-  //Serial.print("FSR = "); Serial.println(FSR);
-  uint8_t BCK16 = detectBitClock();
+  //irReceiver();
+  uint16_t FSR = detectFS(); //Serial.print("FSR = "); Serial.println(FSR);
+  //uint8_t BCK16 = detectBitClock();
   //Serial.print("BCK16 = "); Serial.println(BCK16);
   //Serial.print("volumeCounter ="); Serial.println(volumeCounter);
-  /*digiFil = */changeFilter();
-  /*inputSource = */inputSelection();/* |*/ irReceiver();
-  //Serial.print("Input Source = "); Serial.println(inputSource);
+  changeFilter();
+  inputSelection(); //Serial.print("Input Source = "); Serial.println(inputSource);
   modeSwitch(FSR, digiFil, inputSource);
   messageOut(FSR, digiFil);
 

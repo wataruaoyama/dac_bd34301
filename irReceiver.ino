@@ -1,3 +1,11 @@
+/*************************************************************
+  IRリモコン受信コントローラ
+  ********************************
+  
+  Apple Reoteまたは秋月電子通商で購入可能なOptoSupplyのリモコンに対応
+  
+  
+ *************************************************************/
 void irReceiver() {
 
   controlByIR();
@@ -159,12 +167,14 @@ void controlByIR()
       if (mute == true) {
         for(i=0; i<=ptrSlave; i++) {
           i2cWrite(BD34301_CHIP[i], Mute, 0x00);
+          digitalWrite(pwLED, LOW);
           mute = false;
         }
       }
       else {
         for(i=0; i<=ptrSlave; i++) {
           i2cWrite(BD34301_CHIP[i], Mute, 0x03);
+          digitalWrite(pwLED, HIGH);
           mute = true;
         }
       }

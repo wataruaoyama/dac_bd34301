@@ -1,7 +1,15 @@
 void modeSwitch(uint16_t FS, uint8_t digiFil, uint8_t inputSource) {
+  
   uint16_t DSD = digitalRead(DP);
+  static int prevMode = 1;
+  static int prevPcmRate = 0;
+  static int prevDsdRate = 0;
+  static int prevFil = 1;
+  static uint8_t prevInputSource = 1;
+  
 //  Serial.print("prevMode = "); Serial.println(prevMode);
 //  Serial.print("DSD = "); Serial.println(DSD);
+
   if (prevInputSource != inputSource) {
     if (DSD == 0) {
       sequenceOne();
