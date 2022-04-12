@@ -74,9 +74,16 @@ void initBD34301() {
     i2cWrite(BD34301_CHIP[i], AudioIF3, 0x00);
   
     /* DSDフィルターの選択 */
-    if (HWCNF[4] >= 0x02) i2cWrite(BD34301_CHIP[i], DSDFilter, 0x01);
-    else if (HWCNF[4] == 0x00) i2cWrite(BD34301_CHIP[i], DSDFilter, 0x00);
-    else if (HWCNF[4] == 0x01) i2cWrite(BD34301_CHIP[i], DSDFilter, 0x02);
+    if (HWCNF[11] == 0x01) {  // BD34301EKV
+      if (HWCNF[4] >= 0x02) i2cWrite(BD34301_CHIP[i], DSDFilter, 0x01);
+      else if (HWCNF[4] == 0x00) i2cWrite(BD34301_CHIP[i], DSDFilter, 0x00);
+      else if (HWCNF[4] == 0x01) i2cWrite(BD34301_CHIP[i], DSDFilter, 0x02);
+    }
+    else if (HWCNF[11] == 0x52) { // BD34352EKV
+      if (HWCNF[4] >= 0x02) i2cWrite(BD34301_CHIP[i], DSDFilter, 0x05);
+      else if (HWCNF[4] == 0x00) i2cWrite(BD34301_CHIP[i], DSDFilter, 0x04);
+      else if (HWCNF[4] == 0x01) i2cWrite(BD34301_CHIP[i], DSDFilter, 0x06);
+    }
   
     /* オーディオデータ入力の極性設定 */
     if (HWCNF[5] == 0x03) i2cWrite(BD34301_CHIP[i], AudioInputPolarity, 0x00);
@@ -85,7 +92,10 @@ void initBD34301() {
     else if (HWCNF[5] == 0x00) i2cWrite(BD34301_CHIP[i], AudioInputPolarity, 0x03);  // L/R Inverse
     
     /* ボリューム遷移時間設定 */
-    i2cWrite(BD34301_CHIP[i], VolumeTransitionTime, 0x4B);
+    if (HWCNF[11] == 0x01)
+      i2cWrite(BD34301_CHIP[i], VolumeTransitionTime, 0x48);
+    else if (HWCNF[11] == 0x52)
+      i2cWrite(BD34301_CHIP[i], VolumeTransitionTime, 0x78);
   
     /* アッテネーター初期値設定 */
     i2cWrite(BD34301_CHIP[i], Volume1, 0x00);
@@ -113,8 +123,14 @@ void initBD34301() {
 
     /* */
     i2cWrite(BD34301_CHIP[i], Setting1, 0x00);
-    i2cWrite(BD34301_CHIP[i], Setting2, 0x34);
-    i2cWrite(BD34301_CHIP[i], Setting3, 0xB8);
+    if (HWCNF[11] == 0x01) {
+      i2cWrite(BD34301_CHIP[i], Setting2, 0x34);
+      i2cWrite(BD34301_CHIP[i], Setting3, 0xB8);
+    }
+    else if (HWCNF[11] == 0x52) {
+      i2cWrite(BD34301_CHIP[i], Setting2, 0x16);
+      i2cWrite(BD34301_CHIP[i], Setting3, 0x2D);      
+    }
     i2cWrite(BD34301_CHIP[i], Setting4, 0x0D);
     i2cWrite(BD34301_CHIP[i], Setting5, 0x16);
     i2cWrite(BD34301_CHIP[i], Setting6, 0x16);    

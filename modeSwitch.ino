@@ -198,20 +198,20 @@ void sequenceThree(uint16_t FS) {
     i2cWrite(BD34301_CHIP[i], Clock2, 0x00);
     i2cWrite(BD34301_CHIP[i], AudioIF1, 0x8B);
     if (HWCNF[4] >= 2) {
-      if (FS == 2822) i2cWrite(BD34301_CHIP[i], DSDFilter, 0x01);       // fc = 26kHz
-      else if (FS == 5644) i2cWrite(BD34301_CHIP[i], DSDFilter, 0x01);  // fc = 52kHz
-      else if (FS == 11289) i2cWrite(BD34301_CHIP[i], DSDFilter, 0x01); // fc = 104kHz
-      else if (FS == 22579) i2cWrite(BD34301_CHIP[i], DSDFilter, 0x01); // fc = 208kHz
+      if (FS == 2822) i2cWrite(BD34301_CHIP[i], DSDFilter, 0x05);       // fc = 26kHz
+      else if (FS == 5644) i2cWrite(BD34301_CHIP[i], DSDFilter, 0x05);  // fc = 52kHz
+      else if (FS == 11289) i2cWrite(BD34301_CHIP[i], DSDFilter, 0x05); // fc = 104kHz
+      else if (FS == 22579) i2cWrite(BD34301_CHIP[i], DSDFilter, 0x05); // fc = 208kHz
     } else if (HWCNF[4] == 0x01) {
-      if (FS == 2822) i2cWrite(BD34301_CHIP[i], DSDFilter, 0x02);       // fc = 52kHz
-      else if (FS == 5644) i2cWrite(BD34301_CHIP[i], DSDFilter, 0x02);  // fc = 104kHz
-      else if (FS == 11289) i2cWrite(BD34301_CHIP[i], DSDFilter, 0x02); // fc = 208kHz
-      else if (FS == 22579) i2cWrite(BD34301_CHIP[i], DSDFilter, 0x02); // fc = 416kHz      
+      if (FS == 2822) i2cWrite(BD34301_CHIP[i], DSDFilter, 0x06);       // fc = 52kHz
+      else if (FS == 5644) i2cWrite(BD34301_CHIP[i], DSDFilter, 0x06);  // fc = 104kHz
+      else if (FS == 11289) i2cWrite(BD34301_CHIP[i], DSDFilter, 0x06); // fc = 208kHz
+      else if (FS == 22579) i2cWrite(BD34301_CHIP[i], DSDFilter, 0x06); // fc = 416kHz      
     } else if (HWCNF[4] == 0x00) {
-      if (FS == 2822) i2cWrite(BD34301_CHIP[i], DSDFilter, 0x00);       // fc = 13kHz
-      else if (FS == 5644) i2cWrite(BD34301_CHIP[i], DSDFilter, 0x00);  // fc = 26kHz
-      else if (FS == 11289) i2cWrite(BD34301_CHIP[i], DSDFilter, 0x00); // fc = 52kHz
-      else if (FS == 22579) i2cWrite(BD34301_CHIP[i], DSDFilter, 0x00); // fc = 104kHz      
+      if (FS == 2822) i2cWrite(BD34301_CHIP[i], DSDFilter, 0x04);       // fc = 13kHz
+      else if (FS == 5644) i2cWrite(BD34301_CHIP[i], DSDFilter, 0x04);  // fc = 26kHz
+      else if (FS == 11289) i2cWrite(BD34301_CHIP[i], DSDFilter, 0x04); // fc = 52kHz
+      else if (FS == 22579) i2cWrite(BD34301_CHIP[i], DSDFilter, 0x04); // fc = 104kHz      
     }
     i2cWrite(BD34301_CHIP[i], DeltaSigma, 0x02);
     i2cWrite(BD34301_CHIP[i], Setting5, 0x9E);

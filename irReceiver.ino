@@ -4,7 +4,6 @@
   
   Apple Reoteまたは秋月電子通商で購入可能なOptoSupplyのリモコンに対応
   
-  
  *************************************************************/
 void irReceiver() {
 
@@ -87,17 +86,17 @@ void controlByIR()
   {
     //translateIR();
     if (results.value == 0xFFFFFFFF) {
-      if ((irkey == 0x77E1504F) || (irkey == 0x8F705FA)) {
+      if ((irkey == 0x77E1504F) || (irkey == 0x8F705FA) || (irkey == 0x77E1D04D)) {
         if (volumeCounter == 0) volumeCounter = volumeCounter;
         else volumeCounter--;
       }
-      else if ((irkey == 0x77E1304F) || (irkey == 0x8F700FF)) {
+      else if ((irkey == 0x77E1304F) || (irkey == 0x8F700FF) || (irkey == 0x77E1B04D)) {
         if (volumeCounter == 255) volumeCounter = volumeCounter;
         else volumeCounter++;
       }
     }
     // リモコンのUPが押された場合
-    else if ( (results.value == 0x77E1504F) || (results.value == 0x8F705FA) ) {
+    else if ( (results.value == 0x77E1504F) || (results.value == 0x8F705FA) || (results.value == 0x77E1D04D) ) {
     // volumeCounterの値が0だったら
       if ( volumeCounter == 0 ){
         // volumeCounterの値を保持する
@@ -110,7 +109,7 @@ void controlByIR()
       }
     }
     // リモコンのDOWNが押された場合
-    else if ( (results.value == 0x77E1304F) || (results.value == 0x8F700FF) ) {
+    else if ( (results.value == 0x77E1304F) || (results.value == 0x8F700FF) || (results.value == 0x77E1B04D) ) {
     // volumeCounterが255になったら
       if ( volumeCounter == 255 ) {
         // volumeCounterの値を保持する
@@ -122,48 +121,90 @@ void controlByIR()
         volumeCounter++;
       }    
     }
+    
     /* 入力ソースの切り替え*/
     // リモコンのLEFTが押されたら
-    else if ( (results.value == 0x77E1904F) || (results.value == 0x8F708F7) ) {
+    else if ( (results.value == 0x77E1904F) || (results.value == 0x8F708F7) || (results.value == 0x77E1104D) ) {
       // countに1を足して
       count++;
-      // countが1の場合
-      if ( count == 1 ) {
-        // 入力をUSBにする
-        i2cWrite(CPLD_ADR, 0x00, 0x00); // USB
-        //i2cWrite(CPLD_ADR, 0x00, 0x10); // XH
-        //i2cWrite(CPLD_ADR, 0x00, 0x08); // RJ45
-        // シリアルモニタに出力
-        //Serial.println("USB INPUT Selected");
+      if ( (HWCNF[10] == 0x00) || (HWCNF[10] == 0x40) ){
+        // countが1の場合
+        if ( count == 1 ) {
+          // 入力をUSBにする
+          i2cWrite(CPLD_ADR, 0x00, 0x00); // USB
+          //i2cWrite(CPLD_ADR, 0x00, 0x10); // XH
+          //i2cWrite(CPLD_ADR, 0x00, 0x08); // RJ45
+          // シリアルモニタに出力
+          //Serial.println("USB INPUT Selected");
+        }
+        // countが2の場合
+        else if (count == 2) {
+          // 入力をRJ45コネクタ（LANケーブル経由のI2S)にする
+          i2cWrite(CPLD_ADR, 0x00, 0x08); // RJ45
+          //i2cWrite(CPLD_ADR, 0x00, 0x00); // USB
+          // シリアルモニタに出力
+          //Serial.println("RJ45 INPUT Seleted");
+        }
+        // countが3の場合
+        else if (count == 3) {
+          // 入力をXHコネクタ(I2S)にする
+          i2cWrite(CPLD_ADR, 0x00, 0x10);  // XH
+          //i2cWrite(CPLD_ADR, 0x00, 0x08);  // RJ45
+          // countを0にする
+          count = 0;
+          // シリアルモニタに出力
+          //Serial.println("XH INPUT Selected");
+        }
       }
-      // countが2の場合
-      else if (count == 2) {
-        // 入力をRJ45コネクタ（LANケーブル経由のI2S)にする
-        i2cWrite(CPLD_ADR, 0x00, 0x08); // RJ45
-        //i2cWrite(CPLD_ADR, 0x00, 0x00); // USB
-        // シリアルモニタに出力
-        //Serial.println("RJ45 INPUT Seleted");
-      }
-      // countが3の場合
-      else if (count == 3) {
-        // 入力をXHコネクタ(I2S)にする
-        i2cWrite(CPLD_ADR, 0x00, 0x10);  // XH
-        //i2cWrite(CPLD_ADR, 0x00, 0x08);  // RJ45
-        // countを0にする
-        count = 0;
-        // シリアルモニタに出力
-        //Serial.println("XH INPUT Selected");
+      else if (HWCNF[10] == 0xC0) {
+        //Serial.println("MULTI OPTION");
+        // countが1の場合
+        if ( count == 1 ) {
+          // 入力をUSBにする
+          i2cWrite(CPLD_ADR, 0x00, 0x00); // USB
+        }
+        else if (count == 2) {
+          // 入力をRJ45コネクタ（LANケーブル経由のI2S)にする
+          i2cWrite(PCM9211_ADR, 0x7C, 0x01);  // LVC541出力を無効化
+          i2cWrite(PCM9211_ADR, 0x78, 0x22);  // LVC157出力を有効化、LVDSを選択
+          i2cWrite(CPLD_ADR, 0x00, 0x08); // オプションコネクタを選択
+        }
+        // countが3の場合
+        else if (count == 3) {
+          // 入力をXHコネクタ(I2S)にする
+          i2cWrite(CPLD_ADR, 0x00, 0x10);  // XH
+          // シリアルモニタに出力
+          //Serial.println("XH INPUT Selected");
+        }
+        else if ( count == 4 ) {
+          // 入力をOpticalにする
+          i2cWrite(PCM9211_ADR, 0x7c, 0x01);  // LVC541出力を無効化
+          i2cWrite(PCM9211_ADR, 0x34, 0xC4);  // Optical入力を選択
+          i2cWrite(PCM9211_ADR, 0x78, 0x21);  // LVC157出力を有効化,PCM9211出力を選択
+          i2cWrite(CPLD_ADR, 0x00, 0x08);
+        }
+        else if ( count == 5 ) {
+          // 入力をCoaxialにする
+          i2cWrite(PCM9211_ADR, 0x34, 0x40);  // Coaxial入力を選択
+        }
+        else if ( count == 6 ) {
+          // 入力をマルチオプション基板のXHコネクタ(I2S)にする
+          i2cWrite(PCM9211_ADR, 0x78, 0x12);  // LVC157出力を無効化
+          i2cWrite(PCM9211_ADR, 0x7c, 0x00);  // LVC541出力を有効化
+          count = 0;
+        }
       }
     }
+    
     /* デジタルフィルタの切り替え */
     // リモコンのRIGHT（OptoSupplyは->）が押された場合
-    else if ((results.value == 0x77E1604F) || (results.value == 0x8F701FE)) {
+    else if ((results.value == 0x77E1604F) || (results.value == 0x8F701FE) || (results.value == 0x77E1E04D)) {
       if (digiFil == 1) digiFil = 0;
       else digiFil = 1;
     }
     /* デジタルミュートコントロール */
     // リモコンのMENU（OptoSupplyは"A"）が押された場合
-    else if ((results.value == 0x77E1C04F) || (results.value == 0x8F71FE0)) {
+    else if ((results.value == 0x77E1C04F) || (results.value == 0x8F71FE0) || (results.value == 0x77E1404D)) {
       if (mute == true) {
         for(i=0; i<=ptrSlave; i++) {
           i2cWrite(BD34301_CHIP[i], Mute, 0x00);

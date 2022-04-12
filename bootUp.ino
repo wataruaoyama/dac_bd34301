@@ -1,6 +1,10 @@
 void bootUp() {
-  initBD34301();
+  
+  if (HWCNF[10] == 0xC0) {
+    initPCM9211();
+  }
 
+  initBD34301();
   delayMicroseconds(10);
   
   uint8_t i;

@@ -1,4 +1,5 @@
 #define CPLD_ADR 0x52
+#define PCM9211_ADR 0x40
 #define upSwitch 4
 #define downSwitch 39
 #define filterSwitch 35
@@ -98,7 +99,8 @@ char ak4499[]           = "AK4499";
 char ak4493[]           = "AK4493";
 char ak4495[]           = "AK4495S";
 char ak4490[]           = "AK4490";
-char bd34301[]          = "BD34301EKV";
+char bd34301[]          = "BD34301";
+char bd34352[]          = "BD34352";
 char es9038q[]          = "ES9038Q2M";
 char others[]           = "Others";
 
@@ -131,7 +133,7 @@ uint8_t inputSource = 1;
 //int prevFil = 1;
 //uint8_t prevInputSource = 1;
 
-uint8_t HWCNF[10]; //{DEVNAME, INSEL, DIF, MONO_ST, DSDF, INPOL, DEM, OSR, HPC, PAC};
+uint8_t HWCNF[12]; //{DEVNAME, INSEL, DIF, MONO_ST, DSDF, INPOL, DEM, OSR, HPC, PAC, OPT, CHIP_VERSION};
 uint8_t ptrSlave;
 
 // Timer 
