@@ -1,4 +1,5 @@
 #define CPLD_ADR 0x52
+#define PCM9211_ADR 0x40
 #define upSwitch 4
 #define downSwitch 39
 #define filterSwitch 35
@@ -38,15 +39,17 @@
 #define Boot1 0xD0
 #define Boot2 0xD3
 
+int receiver = 32; // Signal Pin of IR receiver to Arduino Digital Pin 32
+
 Preferences preferences;
 int volumeValue; 
 
 int volumeCounter;
-int state;
+//int state;
 volatile int cnt = 3;
 volatile int count = 1;
-volatile int buttonState = HIGH;
-volatile int inswState = HIGH;
+//volatile int buttonState = HIGH;
+//volatile int inswState = HIGH;
 volatile int blynkModeButton;
 volatile int blynkMuteButton;
 
@@ -96,7 +99,8 @@ char ak4499[]           = "AK4499";
 char ak4493[]           = "AK4493";
 char ak4495[]           = "AK4495S";
 char ak4490[]           = "AK4490";
-char bd34301[]          = "BD34301EKV";
+char bd34301[]          = "BD34301";
+char bd34352[]          = "BD34352";
 char es9038q[]          = "ES9038Q2M";
 char others[]           = "Others";
 
@@ -121,14 +125,15 @@ uint8_t inputSource = 1;
 //int DEM,DSDF;
 //bool DSDD;
 //bool GC0,GC1;
+//bool mute = true;
 
-int prevMode = 1;
-int prevPcmRate = 0;
-int prevDsdRate = 0;
-int prevFil = 1;
-uint8_t prevInputSource = 1;
+//int prevMode = 1;
+//int prevPcmRate = 0;
+//int prevDsdRate = 0;
+//int prevFil = 1;
+//uint8_t prevInputSource = 1;
 
-uint8_t HWCNF[10]; //{DEVNAME, INSEL, DIF, MONO_ST, DSDF, INPOL, DEM, OSR, HPC, PAC};
+uint8_t HWCNF[12]; //{DEVNAME, INSEL, DIF, MONO_ST, DSDF, INPOL, DEM, OSR, HPC, PAC, OPT, CHIP_VERSION};
 uint8_t ptrSlave;
 
 // Timer 

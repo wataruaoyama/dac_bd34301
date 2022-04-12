@@ -168,22 +168,54 @@ void displayDigitalFilter(uint8_t digiFil) {
 /* 入力インターフェースの表示 */
 void displayInputInterface() {
   oled.setCursor(17, 1);
-  // 入力切替トグルスイッチのカウント値が'1'の場合
-  if ( count == 1 ) {
-    // USBインターフェースの選択を表示
-    oled.print("[U]");
+  if ( (HWCNF[10] == 0x00) || (HWCNF[10] == 0x40) ){
+    // 入力切替トグルスイッチのカウント値が'1'の場合
+    if ( count == 1 ) {
+      // USBインターフェースの選択を表示
+      oled.print("[U]");
+    }
+    // カウント値が'2'の場合
+    else if ( count == 2 ) {
+      // RJ45コネクタ(LANケーブル経由のI2Sインターフェース)の選択を表示
+      oled.print("[R]");
+    }
+    // カウント値が'3'の場合
+    else if (( count == 3 ) || (count == 0)){
+      // XHコネクタ(I2Sインターフェース)の選択を表示
+      oled.print("[X]");
+    }
+    else {
+      oled.print("[U]");
+    }
   }
-  // カウント値が'2'の場合
-  else if ( count == 2 ) {
-    // RJ45コネクタ(LANケーブル経由のI2Sインターフェース)の選択を表示
-    oled.print("[R]");
-  }
-  // カウント値が'3'の場合
-  else if (( count == 3 ) || (count == 0)){
-    // XHコネクタ(I2Sインターフェース)の選択を表示
-    oled.print("[X]");
-  }
-  else {
+  else if ( HWCNF[10] == 0xC0 ) {
+    if ( count == 1 ) {
+      // USBインターフェースの選択を表示
+      oled.print("[U]");
+    }
+    // カウント値が'2'の場合
+    else if ( count == 2 ) {
+      // RJ45コネクタ(LANケーブル経由のI2Sインターフェース)の選択を表示
+      oled.print("[R]");
+    }
+    // カウント値が'3'の場合
+    else if ( count == 3 ) {
+      // XHコネクタ(I2Sインターフェース)の選択を表示
+      oled.print("[X]");
+    }
+    else if ( count == 4 ) {
+      // S/PDIF Opticalの選択を表示
+      oled.print("[O]");
+    }
+    else if ( count == 5 ) {
+      // S/PDIF Coaxialの選択を表示
+      oled.print("[C]");
+    }
+    else if (( count == 6 ) || ( count == 0 )) {
+      // マルチオプション基板のXHコネクタ（I2Sインターフェース）の選択を表示
+      oled.print("[x]");
+    }
+    else
     oled.print("[U]");
   }
 }

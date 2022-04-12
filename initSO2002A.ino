@@ -22,7 +22,10 @@ void initSO2002A() {
   else if ( HWCNF[0] == 0x06 ) oled.print(ak4493);
   else if ( HWCNF[0] == 0x05 ) oled.print(ak4495);
   else if ( HWCNF[0] == 0x04 ) oled.print(ak4490);
-  else if ( HWCNF[0] == 0x03 ) oled.print(bd34301);
+  else if ( HWCNF[0] == 0x03 ) {
+    if ( HWCNF[11] == 0x01) oled.print(bd34301);
+    else if ( HWCNF[11] == 0x52 ) oled.print(bd34352);
+  }
   else if ( HWCNF[0] == 0x01 ) oled.print(es9038q);
   else oled.print(others);
   
