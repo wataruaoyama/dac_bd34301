@@ -79,7 +79,7 @@ void controlByIR()
 {
   uint8_t i;
   static int irkey = 0;
-  static bool mute = true;
+  static bool mute = false;
   
   if (irrecv.decode(&results)) // have we received an IR signal?
 
@@ -127,33 +127,36 @@ void controlByIR()
     else if ( (results.value == 0x77E1904F) || (results.value == 0x8F708F7) || (results.value == 0x77E1104D) ) {
       // countに1を足して
       count++;
-      if ( (HWCNF[10] == 0x00) || (HWCNF[10] == 0x40) ){
+      if ( (HWCNF[10] == 0x20) ){
         // countが1の場合
         if ( count == 1 ) {
           // 入力をUSBにする
           i2cWrite(CPLD_ADR, 0x00, 0x00); // USB
-          //i2cWrite(CPLD_ADR, 0x00, 0x10); // XH
-          //i2cWrite(CPLD_ADR, 0x00, 0x08); // RJ45
           // シリアルモニタに出力
           //Serial.println("USB INPUT Selected");
         }
         // countが2の場合
         else if (count == 2) {
-          // 入力をRJ45コネクタ（LANケーブル経由のI2S)にする
-          i2cWrite(CPLD_ADR, 0x00, 0x08); // RJ45
-          //i2cWrite(CPLD_ADR, 0x00, 0x00); // USB
+          // 入力をXHコネクタ（I2S)にする
+          i2cWrite(CPLD_ADR, 0x00, 0x10); // XH
           // シリアルモニタに出力
-          //Serial.println("RJ45 INPUT Seleted");
-        }
-        // countが3の場合
-        else if (count == 3) {
-          // 入力をXHコネクタ(I2S)にする
-          i2cWrite(CPLD_ADR, 0x00, 0x10);  // XH
-          //i2cWrite(CPLD_ADR, 0x00, 0x08);  // RJ45
-          // countを0にする
+          //Serial.println("XH INPUT Seleted");
           count = 0;
-          // シリアルモニタに出力
-          //Serial.println("XH INPUT Selected");
+        }
+      }
+      else if ( HWCNF[10] == 0x40) {
+        if ( count ==1 ) i2cWrite(CPLD_ADR, 0x00, 0x08);  // RJ45
+        else if ( count == 2 ) {
+          i2cWrite(CPLD_ADR, 0x00, 0x010); // XH
+          count = 0;
+        }
+      }
+      else if ( HWCNF[10] == 0x60 ) {
+        if ( count == 1) i2cWrite(CPLD_ADR, 0x00, 0x00);  // USB
+        else if ( count == 2 ) i2cWrite(CPLD_ADR, 0x00, 0x08);  // RJ45
+        else if ( count ==3 ) {
+          i2cWrite(CPLD_ADR, 0x00, 0x10);
+          count = 0;
         }
       }
       else if (HWCNF[10] == 0xC0) {
@@ -207,15 +210,17 @@ void controlByIR()
     else if ((results.value == 0x77E1C04F) || (results.value == 0x8F71FE0) || (results.value == 0x77E1404D)) {
       if (mute == true) {
         for(i=0; i<=ptrSlave; i++) {
-          i2cWrite(BD34301_CHIP[i], Mute, 0x00);
+          i2cWrite(BD34301_CHIP[i], Mute, 0x00);  // ミュートオン
           digitalWrite(pwLED, LOW);
+          displayMute = true;
           mute = false;
         }
       }
       else {
         for(i=0; i<=ptrSlave; i++) {
-          i2cWrite(BD34301_CHIP[i], Mute, 0x03);
+          i2cWrite(BD34301_CHIP[i], Mute, 0x03);  // ミュートオフ
           digitalWrite(pwLED, HIGH);
+          displayMute = false;
           mute = true;
         }
       }

@@ -45,8 +45,9 @@ void displayATT(int vin) {
   level = abs(level);
   // 表示位置を(13.0)にする
   oled.setCursor(13, 0);
+  if ( displayMute == true) oled.print(DigitalMute);
   // データが10より小さい場合
-  if ( (0 <= level) && (level <10)) {
+  else if ( (0 <= level) && (level <10)) {
     // 10で割った余りを一桁目の変数onesPlaceに代入
     int onesPlace = level % 10;
     // 2つのスペース
@@ -168,25 +169,34 @@ void displayDigitalFilter(uint8_t digiFil) {
 /* 入力インターフェースの表示 */
 void displayInputInterface() {
   oled.setCursor(17, 1);
-  if ( (HWCNF[10] == 0x00) || (HWCNF[10] == 0x40) ){
+  if ( (HWCNF[10] == 0x00)) oled.print("[X]");
+  else if ( (HWCNF[10] == 0x20) ){
     // 入力切替トグルスイッチのカウント値が'1'の場合
     if ( count == 1 ) {
       // USBインターフェースの選択を表示
       oled.print("[U]");
     }
     // カウント値が'2'の場合
-    else if ( count == 2 ) {
-      // RJ45コネクタ(LANケーブル経由のI2Sインターフェース)の選択を表示
-      oled.print("[R]");
-    }
-    // カウント値が'3'の場合
-    else if (( count == 3 ) || (count == 0)){
-      // XHコネクタ(I2Sインターフェース)の選択を表示
+    else if (( count == 2 ) || (count == 0)) {
+      // I2S
       oled.print("[X]");
     }
     else {
       oled.print("[U]");
     }
+  }
+  else if ( HWCNF[10] == 0x40) {
+    if ( count == 1 ) oled.print("[R]");
+    else if (( count == 2 ) || ( count == 0 )) {
+      oled.print("[X]");
+    }
+    else oled.print("[R]");
+  }
+  else if ( HWCNF[10] == 0x60) {
+    if ( count == 1 ) oled.print("[U]");
+    else if ( count == 2) oled.print("[R]");
+    else if (( count == 3) || ( count == 0)) oled.print("[X]");
+    else oled.print("[U]");
   }
   else if ( HWCNF[10] == 0xC0 ) {
     if ( count == 1 ) {

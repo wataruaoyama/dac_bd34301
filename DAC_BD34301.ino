@@ -4,6 +4,8 @@
 #include <Preferences.h>
 #include "BD34301.h"
 #include "IRremote.h"
+#include <WiFi.h>
+#include "esp_bt.h"
 
 #define SDA 21
 #define SCL 22
@@ -61,31 +63,47 @@ void setup() {
   volumeCounter = volumeValue;
   //
   Serial.begin(115200);
-  Wire.begin(SDA, SCL);
-  // SCLの周波数を400kHzに設定する
-  Wire.setClock(400000);
-  
-  oled.begin(20, 2);
-  oled.clear();
-  
   delay(500);
 
-  //i2cWrite(CPLD_ADR, 0x00, 0x10); // 入力ソースをXHに変更
+  WiFi.mode(WIFI_OFF);
+  btStop();
+
+  Wire.begin(SDA, SCL);
+  //Wire.setTimeOut(100);
+  // SCLの周波数を400kHzに設定する
+  Wire.setClock(400000);
+ 
+  oled.begin(20, 2);
+  oled.clear();
+ 
+  delay(500);
+ 
   i2cWrite(CPLD_ADR, 0x03, 0x01); // MCLKの停止を解除
   i2cWrite(CPLD_ADR, 0x03, 0x81); // RESETB解除　
-
+  
   delay(10);
 
   /* コンフィグピンのステータスを取得 */
   getInitialSetting(); 
-  /* 電源立ち上げシーケンス */
-  bootUp();
+
   /* 20x2 OLED表示器の初期化 */
   initSO2002A();
+
   // デバッグ用のLEDを点灯
   digitalWrite(pwLED,HIGH);
+
   readReg(0);
   irrecv.enableIRIn(); // Start the receiver
+
+  // 入力ソースの初期選択
+  if ((HWCNF[10] == 0x00)) i2cWrite(CPLD_ADR, 0x00, 0x10);// XH
+  else if (HWCNF[10] == 0x20) i2cWrite(CPLD_ADR, 0x00, 0x00); // USB
+  else if (HWCNF[10] == 0x40) i2cWrite(CPLD_ADR, 0x00, 0x08); // RJ45
+  else if (HWCNF[10] == 0x60) i2cWrite(CPLD_ADR, 0x00, 0x00); // USB
+  else if (HWCNF[10] == 0xC0) i2cWrite(CPLD_ADR, 0x00, 0x00); // USB
+
+  /* 電源立ち上げシーケンス */
+  bootUp();
 }
 
 void loop() {
@@ -118,13 +136,10 @@ void loop() {
     preferences.end();
   }
 
-  //irReceiver();
   uint16_t FSR = detectFS(); //Serial.print("FSR = "); Serial.println(FSR);
-  //uint8_t BCK16 = detectBitClock();
-  //Serial.print("BCK16 = "); Serial.println(BCK16);
+  //uint8_t BCK16 = detectBitClock(); Serial.print("BCK16 = "); Serial.println(BCK16);
   //Serial.print("volumeCounter ="); Serial.println(volumeCounter);
-  changeFilter();
-  inputSelection(); //Serial.print("Input Source = "); Serial.println(inputSource);
+
   modeSwitch(FSR, digiFil, inputSource);
   messageOut(FSR, digiFil);
 
@@ -137,7 +152,7 @@ uint8_t i2cRead(uint8_t sladr, uint8_t regadr){
   Wire.beginTransmission(sladr);
   Wire.write(regadr);
   Wire.endTransmission();
-  Wire.requestFrom(sladr, 1);
+  Wire.requestFrom((uint8_t)sladr, (uint8_t)1);
   return Wire.read();
 }
 
@@ -145,7 +160,7 @@ uint8_t i2cWrite(uint8_t sladr, uint8_t regadr, uint8_t wdata){
   Wire.beginTransmission(sladr);
   Wire.write(regadr);
   Wire.write(wdata);
-  Wire.endTransmission();
+  return Wire.endTransmission();
 }
 
 uint16_t detectFS() {
@@ -182,11 +197,13 @@ uint8_t detectBitClock() {
   return(bck16);
 }
 
-uint8_t getInitialSetting() {
+void getInitialSetting() {
   uint8_t temp = i2cRead(CPLD_ADR, 0x00);
   HWCNF[0] = temp & 0x07; // Device Name
   HWCNF[1] = temp & 0x18; // Input Select
-  HWCNF[10] = temp & 0xC0;  // Detect Option Board
+  HWCNF[10] = temp & 0xE0;  // Detect Option Board
+  int hwcnf = HWCNF[10];
+  Serial.print("HWCNF[10] = "); Serial.println(hwcnf);
   temp = i2cRead(CPLD_ADR, 0x01);
   HWCNF[2] = temp & 0x38; // Digital Input Format
   HWCNF[3] = temp & 0xC0; // Stereo/Mono Mode

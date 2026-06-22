@@ -118,7 +118,7 @@ volatile int DSDON;
 //volatile int DSD64;
 //volatile int mono;
 uint8_t dsdOn, pcmRate, dsdRate;
-uint8_t digiFil = 1;
+uint8_t digiFil = 0;
 uint8_t inputSource = 1;
 //int deviceName;
 //uint8_t DEVNAME,INSEL,DIF,MONO_ST;
