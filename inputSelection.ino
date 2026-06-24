@@ -16,7 +16,7 @@ uint8_t inputSelection() {
   bool state = digitalRead(inputSwitch);
   static bool inswState = HIGH;
   
-  //if ((HWCNF[10] == 0x00)) i2cWrite(CPLD_ADR, 0x00, 0x10);// XH
+  // if ((HWCNF[10] == 0x00)) i2cWrite(CPLD_ADR, 0x00, 0x10);// XH
 
   // スイッチが押されたことの変化があった場合
   if ( inswState == HIGH && state == LOW) {

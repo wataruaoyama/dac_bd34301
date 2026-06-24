@@ -113,19 +113,21 @@ char outputLevel1[]     = "5.6/5/5Vpp";
 char outputLevel2[]     = "5/5/5Vpp";
 char outputLevel3[]     = "5/5/5Vpp";
 
+char DigitalMute[]      = "   MUTE";
+
 volatile int DSDON;
 //volatile int FS;
 //volatile int DSD64;
 //volatile int mono;
 uint8_t dsdOn, pcmRate, dsdRate;
-uint8_t digiFil = 0;
+uint8_t digiFil = 1;
 uint8_t inputSource = 1;
 //int deviceName;
 //uint8_t DEVNAME,INSEL,DIF,MONO_ST;
 //int DEM,DSDF;
 //bool DSDD;
 //bool GC0,GC1;
-//bool mute = true;
+bool displayMute = false;
 
 //int prevMode = 1;
 //int prevPcmRate = 0;
