@@ -127,38 +127,33 @@ void controlByIR()
     else if ( (results.value == 0x77E1904F) || (results.value == 0x8F708F7) || (results.value == 0x77E1104D) ) {
       // countに1を足して
       count++;
-      if ( (HWCNF[10] == 0x20) ){
-        // countが1の場合
-        if ( count == 1 ) {
-          // 入力をUSBにする
-          i2cWrite(CPLD_ADR, 0x00, 0x00); // USB
-          // シリアルモニタに出力
-          //Serial.println("USB INPUT Selected");
-        }
-        // countが2の場合
-        else if (count == 2) {
-          // 入力をXHコネクタ（I2S)にする
-          i2cWrite(CPLD_ADR, 0x00, 0x10); // XH
-          // シリアルモニタに出力
-          //Serial.println("XH INPUT Seleted");
-          count = 0;
-        }
+    if ( (HWCNF[10] == 0x00) ) { //|| (HWCNF[10] == 0x40) ){
+      // countが1の場合
+      if ( count == 1 ) {
+        // 入力をUSBにする
+        i2cWrite(CPLD_ADR, 0x00, 0x00); // USB
       }
-      else if ( HWCNF[10] == 0x40) {
-        if ( count ==1 ) i2cWrite(CPLD_ADR, 0x00, 0x08);  // RJ45
-        else if ( count == 2 ) {
-          i2cWrite(CPLD_ADR, 0x00, 0x010); // XH
-          count = 0;
-        }
+      // countが2の場合
+      else if (count == 2) {
+        // 入力をXHコネクタ(I2S)にする
+        i2cWrite(CPLD_ADR, 0x00, 0x10); // XH
+        count = 0;
       }
-      else if ( HWCNF[10] == 0x60 ) {
-        if ( count == 1) i2cWrite(CPLD_ADR, 0x00, 0x00);  // USB
-        else if ( count == 2 ) i2cWrite(CPLD_ADR, 0x00, 0x08);  // RJ45
-        else if ( count ==3 ) {
-          i2cWrite(CPLD_ADR, 0x00, 0x10);
-          count = 0;
-        }
+    }
+    else if ( HWCNF[10] == 0x40) {
+      if ( count == 1) {
+        // 入力をRJ45コネクタ（LANケーブル経由のI2S)にする
+        i2cWrite(CPLD_ADR, 0x00, 0x00); // USB
       }
+      else if ( count == 2 ) {
+        // 入力をXHコネクタ(I2S)にする
+        i2cWrite(CPLD_ADR, 0x00, 0x08); // RJ45
+      }
+      else if ( count == 3 ) {
+        i2cWrite(CPLD_ADR, 0x00, 0x10); // XH
+        count = 0;
+      }
+    }
       else if (HWCNF[10] == 0xC0) {
         //Serial.println("MULTI OPTION");
         // countが1の場合

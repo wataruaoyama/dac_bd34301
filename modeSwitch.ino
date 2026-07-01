@@ -1,4 +1,4 @@
-/*
+
 void modeSwitch(uint16_t FS, uint8_t digiFil, uint8_t inputSource) {
   
   uint8_t DSD = digitalRead(DP);
@@ -10,7 +10,7 @@ void modeSwitch(uint16_t FS, uint8_t digiFil, uint8_t inputSource) {
   static uint8_t prevInputSource = 0xFF;  // 未初期化扱い
 
   // 初回、入力ソース変更、PCM/DSDモード変更時はここでまとめて処理
-  if ((prevMode != DSD) || (prevInputSource != inputSource)) {
+  if ((prevMode != DSD)) {//} || (prevInputSource != inputSource)) {
 
     sequenceOne();
 
@@ -64,8 +64,8 @@ void modeSwitch(uint16_t FS, uint8_t digiFil, uint8_t inputSource) {
     }
   }
 }
-*/
 
+/*
 void modeSwitch(uint16_t FS, uint8_t digiFil, uint8_t inputSource) {
   
   uint8_t DSD = digitalRead(DP);
@@ -101,7 +101,7 @@ void modeSwitch(uint16_t FS, uint8_t digiFil, uint8_t inputSource) {
 
   if ((prevMode == 0) && (DSD == 0)) {
     if ((prevPcmRate != FS) || (prevFil != digiFil)) {
-      Serial.println("FS is changed!");
+      Serial.println("PCM FS or digital filter is changed!");
       sequenceOne();
       sequenceTwo(FS, digiFil);
       sequenceFour();
@@ -109,8 +109,8 @@ void modeSwitch(uint16_t FS, uint8_t digiFil, uint8_t inputSource) {
       prevPcmRate = FS;   // 20260613
       prevFil = digiFil;  // 20260613
     }
-    //prevPcmRate = FS; 20260613 comment out
-    //prevFil = digiFil;  20260613 comment out
+    // prevPcmRate = FS; // 20260613 comment out
+    // prevFil = digiFil;  // 20260613 comment out
 
   } else if ((prevMode == 1) && (DSD == 1)) {
     if (prevDsdRate != FS) {
@@ -120,7 +120,7 @@ void modeSwitch(uint16_t FS, uint8_t digiFil, uint8_t inputSource) {
 
       prevDsdRate = FS; // 20260613
     }
-    // prevDsdRate = FS; 20260613 comment out
+    // prevDsdRate = FS; // 20260613 comment out
 
   } else if ((prevMode == 0) && (DSD == 1)) {
     sequenceOne();
@@ -139,7 +139,7 @@ void modeSwitch(uint16_t FS, uint8_t digiFil, uint8_t inputSource) {
     prevFil = digiFil;  // 20260613
   }
 }
-
+*/
 
 void sequenceOne() {
   uint8_t i;
@@ -231,8 +231,8 @@ void sequenceTwo(uint16_t FS, uint8_t digiFil) {
         i2cWrite(BD34301_CHIP[i], Clock1, 0x00);
         i2cWrite(BD34301_CHIP[i], FIRFilter1, 0x04);
         i2cWrite(BD34301_CHIP[i], DeltaSigma, 0x11);  // x 32
-        if (digiFil == 1) i2cWrite(BD34301_CHIP[i], FIRFilter2, 0x02);
-        else i2cWrite(BD34301_CHIP[i], FIRFilter2, 0x05);
+        if (digiFil == 1) i2cWrite(BD34301_CHIP[i], FIRFilter2, 0x82);  // 20260626
+        else i2cWrite(BD34301_CHIP[i], FIRFilter2, 0x85); // 20260626
       } else if (HWCNF[7] == 0x04) {
         i2cWrite(BD34301_CHIP[i], Clock1, 0x00);
         i2cWrite(BD34301_CHIP[i], FIRFilter1, 0x04);

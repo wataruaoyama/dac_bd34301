@@ -96,11 +96,12 @@ void setup() {
   irrecv.enableIRIn(); // Start the receiver
 
   // 入力ソースの初期選択
-  if ((HWCNF[10] == 0x00)) i2cWrite(CPLD_ADR, 0x00, 0x10);// XH
-  else if (HWCNF[10] == 0x20) i2cWrite(CPLD_ADR, 0x00, 0x00); // USB
-  else if (HWCNF[10] == 0x40) i2cWrite(CPLD_ADR, 0x00, 0x08); // RJ45
-  else if (HWCNF[10] == 0x60) i2cWrite(CPLD_ADR, 0x00, 0x00); // USB
-  else if (HWCNF[10] == 0xC0) i2cWrite(CPLD_ADR, 0x00, 0x00); // USB
+  // 常にUSBを優先
+  if ((HWCNF[10] == 0x00)) i2cWrite(CPLD_ADR, 0x00, 0x00);  // USB ans XH
+  else if (HWCNF[10] == 0x40) i2cWrite(CPLD_ADR, 0x00, 0x00); // USB,XH and RJ45
+  // else if (HWCNF[10] == 0x40) i2cWrite(CPLD_ADR, 0x00, 0x08); // RJ45
+  // else if (HWCNF[10] == 0x60) i2cWrite(CPLD_ADR, 0x00, 0x00); // USB
+  // else if (HWCNF[10] == 0xC0) i2cWrite(CPLD_ADR, 0x00, 0x00); // USB
 
   /* 電源立ち上げシーケンス */
   bootUp();
@@ -201,7 +202,7 @@ void getInitialSetting() {
   uint8_t temp = i2cRead(CPLD_ADR, 0x00);
   HWCNF[0] = temp & 0x07; // Device Name
   HWCNF[1] = temp & 0x18; // Input Select
-  HWCNF[10] = temp & 0xE0;  // Detect Option Board
+  HWCNF[10] = temp & 0xC0;  // Detect Option Board
   int hwcnf = HWCNF[10];
   Serial.print("HWCNF[10] = "); Serial.println(hwcnf);
   temp = i2cRead(CPLD_ADR, 0x01);
