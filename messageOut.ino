@@ -8,8 +8,6 @@
 void messageOut(uint16_t FS, uint8_t digiFil) {
   cpld.sampleRate = i2cRead(CPLD_ADR, 0x03);
   DSDON = cpld.sampleRate & 0x01;
-//  FS = cpld.sampleRate & 0x3C;
-//  DSD64 = cpld.sampleRate & 0x42;
 
   displayPlayMode();
   displayATT(volumeCounter);

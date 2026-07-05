@@ -148,11 +148,4 @@ void initBD34301() {
     i2cWrite(BD34301_CHIP[0], AudioOutputPolarity, 0x03); // LRch位相反転
     i2cWrite(BD34301_CHIP[1], AudioOutputPolarity, 0x03); // LRch位相反転
   }
-
-//  i2cWrite(BD34301_CHIP[i], Setting1, 0x00);
-//  i2cWrite(BD34301_CHIP[i], Setting2, 0x34);
-//  i2cWrite(BD34301_CHIP[i], Setting3, 0xB8);
-//  i2cWrite(BD34301_CHIP[i], Setting4, 0x0D);
-//  i2cWrite(BD34301_CHIP[i], Setting5, 0x16);
-//  i2cWrite(BD34301_CHIP[i], Setting6, 0x16);
 }

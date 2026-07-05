@@ -45,11 +45,8 @@ Preferences preferences;
 int volumeValue; 
 
 int volumeCounter;
-//int state;
 volatile int cnt = 3;
 volatile int count = 1;
-//volatile int buttonState = HIGH;
-//volatile int inswState = HIGH;
 volatile int blynkModeButton;
 volatile int blynkMuteButton;
 
@@ -116,24 +113,12 @@ char outputLevel3[]     = "5/5/5Vpp";
 char DigitalMute[]      = "   MUTE";
 
 volatile int DSDON;
-//volatile int FS;
-//volatile int DSD64;
-//volatile int mono;
+
 uint8_t dsdOn, pcmRate, dsdRate;
 uint8_t digiFil = 1;
 uint8_t inputSource = 1;
-//int deviceName;
-//uint8_t DEVNAME,INSEL,DIF,MONO_ST;
-//int DEM,DSDF;
-//bool DSDD;
-//bool GC0,GC1;
-bool displayMute = false;
 
-//int prevMode = 1;
-//int prevPcmRate = 0;
-//int prevDsdRate = 0;
-//int prevFil = 1;
-//uint8_t prevInputSource = 1;
+bool displayMute = false;
 
 uint8_t HWCNF[12]; //{DEVNAME, INSEL, DIF, MONO_ST, DSDF, INPOL, DEM, OSR, HPC, PAC, OPT, CHIP_VERSION};
 uint8_t ptrSlave;

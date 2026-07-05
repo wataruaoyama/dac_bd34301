@@ -65,40 +65,6 @@ void modeSwitch(uint16_t FS, uint8_t digiFil, uint8_t inputSource) {
   }
 }
 
-/*
-void modeSwitch(uint16_t FS, uint8_t digiFil, uint8_t inputSource) {
-  
-  uint8_t DSD = digitalRead(DP);
-  static int prevMode = 1;
-  static int prevPcmRate = 0;
-  static int prevDsdRate = 0;
-  static int prevFil = 1;
-  static uint8_t prevInputSource = 1;
-  
-//  Serial.print("prevMode = "); Serial.println(prevMode);
-//  Serial.print("DSD = "); Serial.println(DSD);
-
-  // if (prevInputSource != inputSource) {
-  //   if (DSD == 0) {
-  //     sequenceOne();
-  //     sequenceTwo(FS, digiFil);
-  //     sequenceFour();
-
-  //     prevMode = DSD;
-  //     prevPcmRate = FS;   // 20260613
-  //     prevFil = digiFil;  // 20260613
-  //   } else {
-  //     sequenceOne();
-  //     sequenceThree(FS);
-  //     sequenceFive();
-
-  //     prevMode = DSD;
-  //     prevDsdRate = FS; // 20260613
-  //   }
-  //   prevInputSource = inputSource;
-  //   return; // 入力切替はここで終了。20260613
-  // }
-
   if ((prevMode == 0) && (DSD == 0)) {
     if ((prevPcmRate != FS) || (prevFil != digiFil)) {
       Serial.println("PCM FS or digital filter is changed!");

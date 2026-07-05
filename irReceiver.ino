@@ -221,7 +221,6 @@ void controlByIR()
       }
     }
     // DACのATTレジスタにvolumeCounterの値を設定する
-    //uint8_t i;
     for(i=0; i<=ptrSlave; i++){
       i2cWrite(BD34301_CHIP[i], Volume1, volumeCounter);
       i2cWrite(BD34301_CHIP[i], Volume2, volumeCounter);
