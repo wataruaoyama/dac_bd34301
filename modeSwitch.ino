@@ -63,46 +63,6 @@ void modeSwitch(uint16_t FS, uint8_t digiFil, uint8_t inputSource) {
       prevDsdRate = FS;
     }
   }
-
-  if ((prevMode == 0) && (DSD == 0)) {
-    if ((prevPcmRate != FS) || (prevFil != digiFil)) {
-      Serial.println("PCM FS or digital filter is changed!");
-      sequenceOne();
-      sequenceTwo(FS, digiFil);
-      sequenceFour();
-
-      prevPcmRate = FS;   // 20260613
-      prevFil = digiFil;  // 20260613
-    }
-    // prevPcmRate = FS; // 20260613 comment out
-    // prevFil = digiFil;  // 20260613 comment out
-
-  } else if ((prevMode == 1) && (DSD == 1)) {
-    if (prevDsdRate != FS) {
-      sequenceOne();
-      sequenceThree(FS);
-      sequenceFive();
-
-      prevDsdRate = FS; // 20260613
-    }
-    // prevDsdRate = FS; // 20260613 comment out
-
-  } else if ((prevMode == 0) && (DSD == 1)) {
-    sequenceOne();
-    sequenceThree(FS);
-    sequenceFive();
-    prevMode = DSD;
-    prevDsdRate = FS; // 20260613
-
-  } else if ((prevMode == 1) && (DSD == 0)) {
-    sequenceOne();
-    sequenceTwo(FS, digiFil);
-    sequenceFour();
-
-    prevMode = DSD;
-    prevPcmRate = FS;   // 20260613
-    prevFil = digiFil;  // 20260613
-  }
 }
 
 void sequenceOne() {
