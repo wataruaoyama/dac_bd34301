@@ -63,7 +63,6 @@ void modeSwitch(uint16_t FS, uint8_t digiFil, uint8_t inputSource) {
       prevDsdRate = FS;
     }
   }
-}
 
   if ((prevMode == 0) && (DSD == 0)) {
     if ((prevPcmRate != FS) || (prevFil != digiFil)) {
@@ -105,7 +104,6 @@ void modeSwitch(uint16_t FS, uint8_t digiFil, uint8_t inputSource) {
     prevFil = digiFil;  // 20260613
   }
 }
-*/
 
 void sequenceOne() {
   uint8_t i;
