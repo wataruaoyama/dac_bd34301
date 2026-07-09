@@ -7,6 +7,8 @@
 #include <WiFi.h>
 #include "esp_bt.h"
 
+#include <IRremote.hpp>
+
 #define SDA 21
 #define SCL 22
 
@@ -14,8 +16,8 @@ SO2002A_I2C oled(0x3D);
 U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, SCL, SDA, /* reset=*/ U8X8_PIN_NONE);
 
 /*-----( Declare objects )-----*/
-IRrecv irrecv(receiver);     // create instance of 'irrecv'
-decode_results results;      // create instance of 'decode_results'
+// IRrecv irrecv(receiver);     // create instance of 'irrecv'
+// decode_results results;      // create instance of 'decode_results'
 
 void setup() {
   pinMode(upSwitch,INPUT);
@@ -24,6 +26,7 @@ void setup() {
   pinMode(inputSwitch,INPUT);
   pinMode(pwLED, OUTPUT);
   pinMode(DP, INPUT);
+  pinMode(APPLE_PAIR_RESET_PIN, INPUT_PULLUP);
 
   // Setup timer interrupt
   // Timer: interrupt time and event setting. 
@@ -51,13 +54,13 @@ void setup() {
   timerAlarmEnable(timer4);
 
   // NVRAM setting
-  preferences.begin("my-app", false);
-  volumeValue = preferences.getInt("value", 0);
-  preferences.end();
+  volPrefs.begin("volume", false);
+  volumeValue = volPrefs.getInt("value", 0);
+  volPrefs.end();
 
   if (volumeCounter != volumeValue ) {
-    preferences.putInt("value", volumeCounter);
-    preferences.end();
+    volPrefs.putInt("value", volumeCounter);
+    volPrefs.end();
   }
 
   volumeCounter = volumeValue;
@@ -93,7 +96,24 @@ void setup() {
   digitalWrite(pwLED,HIGH);
 
   readReg(0);
-  irrecv.enableIRIn(); // Start the receiver
+  // irrecv.enableIRIn(); // Start the receiver
+
+  IrReceiver.begin(IR_RECEIVE_PIN, ENABLE_LED_FEEDBACK);
+
+  irPrefs.begin("apple_ir", false);
+
+  applePaired = irPrefs.getBool("paired", false);
+  pairedAppleAddress = irPrefs.getUShort("addr", 0x0000);
+
+  if (applePaired) {
+    Serial.print("Apple Remote paired address loaded: 0x");
+    Serial.println(pairedAppleAddress, HEX);
+  }
+  else {
+    Serial.println("Apple Remote is not paired.");
+  }
+
+
 
   // 入力ソースの初期選択
   // 常にUSBを優先
@@ -131,10 +151,10 @@ void loop() {
     inputSelection();
   }
   
-  preferences.begin("my-app", false);
+  volPrefs.begin("volume", false);
   if (volumeCounter != volumeValue ) {
-    preferences.putInt("value", volumeCounter);
-    preferences.end();
+    volPrefs.putInt("value", volumeCounter);
+    volPrefs.end();
   }
 
   uint16_t FSR = detectFS(); //Serial.print("FSR = "); Serial.println(FSR);
@@ -171,8 +191,8 @@ uint16_t detectFS() {
   dsdRate = cpld.sampleRate & 0x42;
   dsdOn = cpld.sampleRate & 0x01;
   if (dsdOn == 0x00) {
-    if (pcmRate == 0x00 ) FSR = 32;
-    else if (pcmRate == 0x04) FSR = 44;
+    if (pcmRate == 0x00 ) FSR = 44;
+    else if (pcmRate == 0x04) FSR = 32;
     else if (pcmRate == 0x08) FSR = 48;
     else if (pcmRate == 0x0C) FSR = 88;
     else if (pcmRate == 0x10) FSR = 96;

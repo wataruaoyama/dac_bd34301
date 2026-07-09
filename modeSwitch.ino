@@ -237,7 +237,6 @@ void sequenceFour() {
     i2cWrite(BD34301_CHIP[i], DigitalPower, 0x01);    // デジタル・パワー　オン
     i2cWrite(BD34301_CHIP[i], RAMClear, 0x80);        // ラム・クリア　オン
     i2cWrite(BD34301_CHIP[i], RAMClear, 0x00);        // ラム・クリア　オフ
-    //if ( mute == false)
     i2cWrite(BD34301_CHIP[i], Mute, 0x03);            // ミュート オフ
     displayMute = false;
   }
@@ -248,7 +247,6 @@ void sequenceFive() {
   for(i=0; i<=ptrSlave; i++) {
     i2cWrite(BD34301_CHIP[i], SoftwareReset, 0x01);
     i2cWrite(BD34301_CHIP[i], DigitalPower, 0x01);
-    //if ( mute == false)
     i2cWrite(BD34301_CHIP[i], Mute, 0x03);
     displayMute = false;
   }
