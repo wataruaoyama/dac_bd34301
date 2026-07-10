@@ -13,7 +13,7 @@
 #define SCL 22
 
 SO2002A_I2C oled(0x3D);
-U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, SCL, SDA, /* reset=*/ U8X8_PIN_NONE);
+// U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, SCL, SDA, /* reset=*/ U8X8_PIN_NONE);
 
 /*-----( Declare objects )-----*/
 // IRrecv irrecv(receiver);     // create instance of 'irrecv'
@@ -42,7 +42,7 @@ void setup() {
   timerAttachInterrupt(timer4, &onTimer4, true);
   
   // Set alarm to call onTimer function every second (value in microseconds).
-  timerAlarmWrite(timer1, 150000, true); // 150ms
+  timerAlarmWrite(timer1, 10000, true); // 10ms
   //timerAlarmWrite(timer2, 150000, true); // 150ms
   timerAlarmWrite(timer3, 200000, true); // 200ms
   timerAlarmWrite(timer4, 200000, true); // 200ms
