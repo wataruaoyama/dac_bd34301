@@ -16,6 +16,7 @@ uint8_t inputSelection() {
   bool state = digitalRead(inputSwitch);
   static bool inswState = HIGH;
 
+
   // スイッチが押されたことの変化があった場合
   if ( inswState == HIGH && state == LOW) {
     // countに1を足して
@@ -35,13 +36,13 @@ uint8_t inputSelection() {
     }
     else if ( HWCNF[10] == 0x40) {
       if ( count == 1) {
-        // 入力をRJ45コネクタ（LANケーブル経由のI2S)にする
+        // 入力をUSBにする
         i2cWrite(CPLD_ADR, 0x00, 0x00); // USB
       }
       else if ( count == 2 ) {
-        // 入力をXHコネクタ(I2S)にする
+        // 入力をRJ45コネクタ（LANケーブル経由のI2S)にする
         i2cWrite(CPLD_ADR, 0x00, 0x08); // RJ45
-      }
+      } // 入力をXHコネクタ(I2S)にする
       else if ( count == 3 ) {
         i2cWrite(CPLD_ADR, 0x00, 0x10); // XH
         count = 0;
