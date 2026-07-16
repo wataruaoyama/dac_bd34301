@@ -23,28 +23,33 @@ uint8_t inputSelection() {
     count++;
     if ( (HWCNF[10] == 0x00) ) {
       // countが1の場合
-      if ( count == 1 ) {
+      if ( count == 1 ) { // USB
         // 入力をUSBにする
-        i2cWrite(CPLD_ADR, 0x00, 0x00); // USB
+        digitalWrite(INSEL0, LOW);
+        digitalWrite(INSEL1, LOW);
       }
       // countが2の場合
-      else if (count == 2) {
+      else if (count == 2) {  // XH
         // 入力をXHコネクタ(I2S)にする
-        i2cWrite(CPLD_ADR, 0x00, 0x10); // XH
+        digitalWrite(INSEL0, LOW);
+        digitalWrite(INSEL1, HIGH);
         count = 0;
       }
     }
     else if ( HWCNF[10] == 0x40) {
-      if ( count == 1) {
+      if ( count == 1) {  // USB
         // 入力をUSBにする
-        i2cWrite(CPLD_ADR, 0x00, 0x00); // USB
+        digitalWrite(INSEL0, LOW);
+        digitalWrite(INSEL1, LOW);        
       }
       else if ( count == 2 ) {
         // 入力をRJ45コネクタ（LANケーブル経由のI2S)にする
-        i2cWrite(CPLD_ADR, 0x00, 0x08); // RJ45
-      } // 入力をXHコネクタ(I2S)にする
-      else if ( count == 3 ) {
-        i2cWrite(CPLD_ADR, 0x00, 0x10); // XH
+        digitalWrite(INSEL0, HIGH);
+        digitalWrite(INSEL1, LOW);        
+      } 
+      else if ( count == 3 ) {  // 入力をXHコネクタ(I2S)にする
+        digitalWrite(INSEL0, LOW);
+        digitalWrite(INSEL1, HIGH);        
         count = 0;
       }
     }
@@ -54,18 +59,23 @@ uint8_t inputSelection() {
       // countが1の場合
       if ( count == 1 ) {
         // 入力をUSBにする
-        i2cWrite(CPLD_ADR, 0x00, 0x00); // USB
+        digitalWrite(INSEL0, LOW);
+        digitalWrite(INSEL1, LOW);
+        // i2cWrite(CPLD_ADR, 0x00, 0x00); // USB
       }
       else if (count == 2) {
         // 入力をRJ45コネクタ（LANケーブル経由のI2S)にする
         i2cWrite(PCM9211_ADR, 0x7C, 0x01);  // LVC541出力を無効化
         i2cWrite(PCM9211_ADR, 0x78, 0x22);  // LVC157出力を有効化、LVDSを選択
-        i2cWrite(CPLD_ADR, 0x00, 0x08); // オプションコネクタを選択
+        // オプションコネクタを選択
+        digitalWrite(INSEL0, HIGH);
+        digitalWrite(INSEL1, LOW);
       }
       // countが3の場合
       else if (count == 3) {
         // 入力をXHコネクタ(I2S)にする
-        i2cWrite(CPLD_ADR, 0x00, 0x10);  // XH
+        digitalWrite(INSEL0, LOW);
+        digitalWrite(INSEL1, HIGH);  
         // シリアルモニタに出力
         //Serial.println("XH INPUT Selected");
       }
@@ -74,7 +84,9 @@ uint8_t inputSelection() {
         i2cWrite(PCM9211_ADR, 0x7c, 0x01);  // LVC541出力を無効化
         i2cWrite(PCM9211_ADR, 0x34, 0xC4);  // Optical入力を選択
         i2cWrite(PCM9211_ADR, 0x78, 0x21);  // LVC157出力を有効化,PCM9211出力を選択
-        i2cWrite(CPLD_ADR, 0x00, 0x08); // オプションコネクタを選択
+        // オプションコネクタを選択
+        digitalWrite(INSEL0, HIGH);
+        digitalWrite(INSEL1, LOW);
       }
       else if ( count == 5 ) {
         // 入力をCoaxialにする

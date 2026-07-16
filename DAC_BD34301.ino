@@ -27,6 +27,8 @@ void setup() {
   pinMode(pwLED, OUTPUT);
   pinMode(DP, INPUT);
   pinMode(APPLE_PAIR_RESET_PIN, INPUT_PULLUP);
+  pinMode(INSEL0, OUTPUT);
+  pinMode(INSEL1, OUTPUT);
 
   // Setup timer interrupt
   // Timer: interrupt time and event setting. 
@@ -95,7 +97,7 @@ void setup() {
   // デバッグ用のLEDを点灯
   digitalWrite(pwLED,HIGH);
 
-  readReg(0);
+  
   // irrecv.enableIRIn(); // Start the receiver
 
   IrReceiver.begin(IR_RECEIVE_PIN, ENABLE_LED_FEEDBACK);
@@ -113,18 +115,30 @@ void setup() {
     Serial.println("Apple Remote is not paired.");
   }
 
-
-
   // 入力ソースの初期選択
   // 常にUSBを優先
-  if ((HWCNF[10] == 0x00)) i2cWrite(CPLD_ADR, 0x00, 0x00);  // USB ans XH
-  else if (HWCNF[10] == 0x40) i2cWrite(CPLD_ADR, 0x00, 0x00); // USB,XH and RJ45
+  if ((HWCNF[10] == 0x00)) {  // USB ans XH
+    digitalWrite(INSEL0, LOW);
+    digitalWrite(INSEL1, LOW);
+    }
+  else if (HWCNF[10] == 0x40) { // USB,XH and RJ45
+    digitalWrite(INSEL0, LOW);
+    digitalWrite(INSEL1, LOW);
+  }
+  else if (HWCNF[10] == 0xC0) {
+    digitalWrite(INSEL0, LOW);
+    digitalWrite(INSEL1, LOW);
+  }
+
+  // if ((HWCNF[10] == 0x00)) i2cWrite(CPLD_ADR, 0x00, 0x00);  // USB ans XH
+  // else if (HWCNF[10] == 0x40) i2cWrite(CPLD_ADR, 0x00, 0x00); // USB,XH and RJ45
   // else if (HWCNF[10] == 0x40) i2cWrite(CPLD_ADR, 0x00, 0x08); // RJ45
   // else if (HWCNF[10] == 0x60) i2cWrite(CPLD_ADR, 0x00, 0x00); // USB
   // else if (HWCNF[10] == 0xC0) i2cWrite(CPLD_ADR, 0x00, 0x00); // USB
 
   /* 電源立ち上げシーケンス */
   bootUp();
+  readReg(0);
 }
 
 void loop() {
@@ -161,7 +175,7 @@ void loop() {
   //uint8_t BCK16 = detectBitClock(); Serial.print("BCK16 = "); Serial.println(BCK16);
   //Serial.print("volumeCounter ="); Serial.println(volumeCounter);
 
-  modeSwitch(FSR, digiFil, inputSource);
+  modeSwitch(FSR, digiFil, count);
   messageOut(FSR, digiFil);
 
   //readReg(0);
@@ -185,13 +199,33 @@ uint8_t i2cWrite(uint8_t sladr, uint8_t regadr, uint8_t wdata){
 }
 
 uint16_t detectFS() {
+  static uint16_t lastFSR = 0;
+  static uint8_t lastSampleRate = 0xFF;
+
+  uint8_t sampleRate1;
+  uint8_t sampleRate2;
   uint16_t FSR;
-  cpld.sampleRate = i2cRead(CPLD_ADR, 0x03);
+
+  // CPLDのサンプリングレートレジスタを2回読む
+  sampleRate1 = i2cRead(CPLD_ADR, 0x03);
+  delayMicroseconds(200);
+  sampleRate2 = i2cRead(CPLD_ADR, 0x03);
+
+  // 2回の読み取り値が一致しない場合は、前回値を保持する
+  if (sampleRate1 != sampleRate2) {
+    return lastFSR;
+  }
+
+  // ここから先は一致した値だけを使う
+  cpld.sampleRate = sampleRate1;
+  lastSampleRate = cpld.sampleRate;
+
   pcmRate = cpld.sampleRate & 0x3C;
   dsdRate = cpld.sampleRate & 0x42;
-  dsdOn = cpld.sampleRate & 0x01;
+  dsdOn   = cpld.sampleRate & 0x01;
+
   if (dsdOn == 0x00) {
-    if (pcmRate == 0x00 ) FSR = 44;
+    if      (pcmRate == 0x00) FSR = 44;
     else if (pcmRate == 0x04) FSR = 32;
     else if (pcmRate == 0x08) FSR = 48;
     else if (pcmRate == 0x0C) FSR = 88;
@@ -200,17 +234,45 @@ uint16_t detectFS() {
     else if (pcmRate == 0x18) FSR = 192;
     else if (pcmRate == 0x1C) FSR = 352;
     else if (pcmRate == 0x20) FSR = 384;
-    else FSR = 0;
+    else                      FSR = lastFSR;  // 不正値なら前回保持
+  } else {
+    if      (dsdRate == 0x00) FSR = 2822;   // DSD64
+    else if (dsdRate == 0x02) FSR = 5644;   // DSD128
+    else if (dsdRate == 0x40) FSR = 11289;  // DSD256
+    else if (dsdRate == 0x42) FSR = 22579;  // DSD512
+    else                      FSR = lastFSR; // 不正値なら前回保持
   }
-  else {
-    if (dsdRate == 0x00) FSR = 2822;
-    else if (dsdRate == 0x02) FSR = 5644;
-    else if (dsdRate == 0x40) FSR = 11289;
-    else if (dsdRate == 0x42) FSR = 22579;
-    else FSR = 0;
-  }
-  return(FSR);
+
+  lastFSR = FSR;
+  return FSR;
 }
+// uint16_t detectFS() {
+//   uint16_t FSR;
+//   cpld.sampleRate = i2cRead(CPLD_ADR, 0x03);
+//   pcmRate = cpld.sampleRate & 0x3C;
+//   dsdRate = cpld.sampleRate & 0x42;
+//   dsdOn = cpld.sampleRate & 0x01;
+//   if (dsdOn == 0x00) {
+//     if (pcmRate == 0x00 ) FSR = 44;
+//     else if (pcmRate == 0x04) FSR = 32;
+//     else if (pcmRate == 0x08) FSR = 48;
+//     else if (pcmRate == 0x0C) FSR = 88;
+//     else if (pcmRate == 0x10) FSR = 96;
+//     else if (pcmRate == 0x14) FSR = 176;
+//     else if (pcmRate == 0x18) FSR = 192;
+//     else if (pcmRate == 0x1C) FSR = 352;
+//     else if (pcmRate == 0x20) FSR = 384;
+//     else FSR = 0;
+//   }
+//   else {
+//     if (dsdRate == 0x00) FSR = 2822;
+//     else if (dsdRate == 0x02) FSR = 5644;
+//     else if (dsdRate == 0x40) FSR = 11289;
+//     else if (dsdRate == 0x42) FSR = 22579;
+//     else FSR = 0;
+//   }
+//   return(FSR);
+// }
 
 uint8_t detectBitClock() {
   cpld.sampleRate = i2cRead(CPLD_ADR, 0x03);

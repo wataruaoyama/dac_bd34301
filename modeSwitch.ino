@@ -1,6 +1,6 @@
 
 void modeSwitch(uint16_t FS, uint8_t digiFil, uint8_t inputSource) {
-  
+
   uint8_t DSD = digitalRead(DP);
 
   static int prevMode = -1;          // -1: 未初期化
@@ -10,10 +10,11 @@ void modeSwitch(uint16_t FS, uint8_t digiFil, uint8_t inputSource) {
   static uint8_t prevInputSource = 0xFF;  // 未初期化扱い
 
   // 初回、入力ソース変更、PCM/DSDモード変更時はここでまとめて処理
-  if ((prevMode != DSD)) {//} || (prevInputSource != inputSource)) {
+  if ((prevMode != DSD) || (prevInputSource != inputSource)) {
+    Serial.println("Input Source or play mode is changed!");
 
     sequenceOne();
-
+    
     if (DSD == 0) {
       // PCM mode
       sequenceTwo(FS, digiFil);

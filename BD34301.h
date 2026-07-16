@@ -6,6 +6,8 @@
 #define inputSwitch 34
 #define pwLED 25
 #define DP 5
+#define INSEL0 19
+#define INSEL1 18
 
 // BD343xx レジスタアドレス
 #define SoftwareReset 0x00
