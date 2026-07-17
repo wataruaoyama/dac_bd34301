@@ -15,10 +15,6 @@
 SO2002A_I2C oled(0x3D);
 // U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, SCL, SDA, /* reset=*/ U8X8_PIN_NONE);
 
-/*-----( Declare objects )-----*/
-// IRrecv irrecv(receiver);     // create instance of 'irrecv'
-// decode_results results;      // create instance of 'decode_results'
-
 void setup() {
   pinMode(upSwitch,INPUT);
   pinMode(downSwitch,INPUT);
@@ -130,12 +126,6 @@ void setup() {
     digitalWrite(INSEL1, LOW);
   }
 
-  // if ((HWCNF[10] == 0x00)) i2cWrite(CPLD_ADR, 0x00, 0x00);  // USB ans XH
-  // else if (HWCNF[10] == 0x40) i2cWrite(CPLD_ADR, 0x00, 0x00); // USB,XH and RJ45
-  // else if (HWCNF[10] == 0x40) i2cWrite(CPLD_ADR, 0x00, 0x08); // RJ45
-  // else if (HWCNF[10] == 0x60) i2cWrite(CPLD_ADR, 0x00, 0x00); // USB
-  // else if (HWCNF[10] == 0xC0) i2cWrite(CPLD_ADR, 0x00, 0x00); // USB
-
   /* 電源立ち上げシーケンス */
   bootUp();
   readReg(0);
@@ -246,33 +236,6 @@ uint16_t detectFS() {
   lastFSR = FSR;
   return FSR;
 }
-// uint16_t detectFS() {
-//   uint16_t FSR;
-//   cpld.sampleRate = i2cRead(CPLD_ADR, 0x03);
-//   pcmRate = cpld.sampleRate & 0x3C;
-//   dsdRate = cpld.sampleRate & 0x42;
-//   dsdOn = cpld.sampleRate & 0x01;
-//   if (dsdOn == 0x00) {
-//     if (pcmRate == 0x00 ) FSR = 44;
-//     else if (pcmRate == 0x04) FSR = 32;
-//     else if (pcmRate == 0x08) FSR = 48;
-//     else if (pcmRate == 0x0C) FSR = 88;
-//     else if (pcmRate == 0x10) FSR = 96;
-//     else if (pcmRate == 0x14) FSR = 176;
-//     else if (pcmRate == 0x18) FSR = 192;
-//     else if (pcmRate == 0x1C) FSR = 352;
-//     else if (pcmRate == 0x20) FSR = 384;
-//     else FSR = 0;
-//   }
-//   else {
-//     if (dsdRate == 0x00) FSR = 2822;
-//     else if (dsdRate == 0x02) FSR = 5644;
-//     else if (dsdRate == 0x40) FSR = 11289;
-//     else if (dsdRate == 0x42) FSR = 22579;
-//     else FSR = 0;
-//   }
-//   return(FSR);
-// }
 
 uint8_t detectBitClock() {
   cpld.sampleRate = i2cRead(CPLD_ADR, 0x03);
