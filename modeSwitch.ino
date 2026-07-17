@@ -1,56 +1,68 @@
+
 void modeSwitch(uint16_t FS, uint8_t digiFil, uint8_t inputSource) {
-  
-  uint16_t DSD = digitalRead(DP);
-  static int prevMode = 1;
+
+  uint8_t DSD = digitalRead(DP);
+
+  static int prevMode = -1;          // -1: 未初期化
   static int prevPcmRate = 0;
   static int prevDsdRate = 0;
-  static int prevFil = 1;
-  static uint8_t prevInputSource = 1;
-  
-//  Serial.print("prevMode = "); Serial.println(prevMode);
-//  Serial.print("DSD = "); Serial.println(DSD);
+  static int prevFil = -1;           // 未初期化扱い
+  static uint8_t prevInputSource = 0xFF;  // 未初期化扱い
 
-  if (prevInputSource != inputSource) {
+  // 初回、入力ソース変更、PCM/DSDモード変更時はここでまとめて処理
+  if ((prevMode != DSD) || (prevInputSource != inputSource)) {
+    Serial.println("Input Source or play mode is changed!");
+
+    sequenceOne();
+    
     if (DSD == 0) {
+      // PCM mode
+      sequenceTwo(FS, digiFil);
+      sequenceFour();
+
+      prevPcmRate = FS;
+      prevFil = digiFil;
+
+    } else {
+      // DSD mode
+      sequenceThree(FS);
+      sequenceFive();
+
+      prevDsdRate = FS;
+    }
+
+    prevMode = DSD;
+    prevInputSource = inputSource;
+
+    return;
+  }
+
+  // ここから下は、同じ入力ソース・同じPCM/DSDモード中の変更だけを見る
+
+  if (DSD == 0) {
+    // PCM mode中にFSまたはデジタルフィルタが変わった場合
+    if ((prevPcmRate != FS) || (prevFil != digiFil)) {
+      Serial.println("PCM FS or digital filter is changed!");
+
       sequenceOne();
       sequenceTwo(FS, digiFil);
       sequenceFour();
-      prevMode = DSD;
-    } else {
-      sequenceOne();
-      sequenceThree(FS);
-      sequenceFive();
-      prevMode = DSD;
-    }
-    prevInputSource = inputSource;
-  }
 
-  if ((prevMode == 0) && (DSD == 0)) {
-    if ((prevPcmRate != FS) || (prevFil != digiFil)) {
-      Serial.println("FS is changed!");
-      sequenceOne();
-      sequenceTwo(FS, digiFil);
-      sequenceFour();   
+      prevPcmRate = FS;
+      prevFil = digiFil;
     }
-    prevPcmRate = FS;
-    prevFil = digiFil;
-  } else if ((prevMode == 1) && (DSD == 1)) {
+
+  } else {
+    // DSD mode中にFSが変わった場合
     if (prevDsdRate != FS) {
+      Serial.println("DSD FS is changed!");
+
       sequenceOne();
       sequenceThree(FS);
       sequenceFive();
+
+      prevDsdRate = FS;
     }
-    prevDsdRate = FS;
-  } else if ((prevMode == 0) && (DSD == 1)) {
-    sequenceOne();
-    sequenceThree(FS);
-    sequenceFive();
-    prevMode = DSD;
-  } else if ((prevMode == 1) && (DSD == 0)) {
-    sequenceOne();
-    sequenceTwo(FS, digiFil);
-    sequenceFour();
-    prevMode = DSD;
   }
 }
 
@@ -144,8 +156,8 @@ void sequenceTwo(uint16_t FS, uint8_t digiFil) {
         i2cWrite(BD34301_CHIP[i], Clock1, 0x00);
         i2cWrite(BD34301_CHIP[i], FIRFilter1, 0x04);
         i2cWrite(BD34301_CHIP[i], DeltaSigma, 0x11);  // x 32
-        if (digiFil == 1) i2cWrite(BD34301_CHIP[i], FIRFilter2, 0x02);
-        else i2cWrite(BD34301_CHIP[i], FIRFilter2, 0x05);
+        if (digiFil == 1) i2cWrite(BD34301_CHIP[i], FIRFilter2, 0x82);  // 20260626
+        else i2cWrite(BD34301_CHIP[i], FIRFilter2, 0x85); // 20260626
       } else if (HWCNF[7] == 0x04) {
         i2cWrite(BD34301_CHIP[i], Clock1, 0x00);
         i2cWrite(BD34301_CHIP[i], FIRFilter1, 0x04);
@@ -160,8 +172,8 @@ void sequenceTwo(uint16_t FS, uint8_t digiFil) {
         i2cWrite(BD34301_CHIP[i], DeltaSigma, 0x11);  // x 32        
         if ((digiFil == 1) && (HWCNF[8] == 0x04)) i2cWrite(BD34301_CHIP[i], FIRFilter2, 0x82);
         else if ((digiFil == 1) && (HWCNF[8] == 0x00)) i2cWrite(BD34301_CHIP[i], FIRFilter2, 0x02);
-        else if ((digiFil == 0) && (HWCNF[8] == 0x04)) i2cWrite(BD34301_CHIP[i], FIRFilter2, 0x05);
-        else if ((digiFil == 0) && (HWCNF[8] == 0x00)) i2cWrite(BD34301_CHIP[i], FIRFilter2, 0x85);
+        else if ((digiFil == 0) && (HWCNF[8] == 0x04)) i2cWrite(BD34301_CHIP[i], FIRFilter2, 0x85); // 20260612
+        else if ((digiFil == 0) && (HWCNF[8] == 0x00)) i2cWrite(BD34301_CHIP[i], FIRFilter2, 0x05); // 20260612
       }
     } else if ((FS == 352) || (FS == 384)) {
       if ((HWCNF[7] == 0x0C) || (HWCNF[7] == 0x00)) {
@@ -182,7 +194,7 @@ void sequenceTwo(uint16_t FS, uint8_t digiFil) {
         i2cWrite(BD34301_CHIP[i], FIRFilter2, 0x80);
       }
     }
-    if (HWCNF[9] = 0x20) i2cWrite(BD34301_CHIP[i], Clock2, 0x00);
+    if (HWCNF[9] == 0x20) i2cWrite(BD34301_CHIP[i], Clock2, 0x00);  // 20260612
     else i2cWrite(BD34301_CHIP[i], Clock2, 0x01);
     i2cWrite(BD34301_CHIP[i], AudioIF1, 0x0B);
     i2cWrite(BD34301_CHIP[i], Setting5, 0x16);
@@ -227,6 +239,7 @@ void sequenceFour() {
     i2cWrite(BD34301_CHIP[i], RAMClear, 0x80);        // ラム・クリア　オン
     i2cWrite(BD34301_CHIP[i], RAMClear, 0x00);        // ラム・クリア　オフ
     i2cWrite(BD34301_CHIP[i], Mute, 0x03);            // ミュート オフ
+    displayMute = false;
   }
 }
 
@@ -236,5 +249,6 @@ void sequenceFive() {
     i2cWrite(BD34301_CHIP[i], SoftwareReset, 0x01);
     i2cWrite(BD34301_CHIP[i], DigitalPower, 0x01);
     i2cWrite(BD34301_CHIP[i], Mute, 0x03);
+    displayMute = false;
   }
 }

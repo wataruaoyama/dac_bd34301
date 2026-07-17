@@ -4,16 +4,16 @@
 #include <Preferences.h>
 #include "BD34301.h"
 #include "IRremote.h"
+#include <WiFi.h>
+#include "esp_bt.h"
+
+#include <IRremote.hpp>
 
 #define SDA 21
 #define SCL 22
 
 SO2002A_I2C oled(0x3D);
-U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, SCL, SDA, /* reset=*/ U8X8_PIN_NONE);
-
-/*-----( Declare objects )-----*/
-IRrecv irrecv(receiver);     // create instance of 'irrecv'
-decode_results results;      // create instance of 'decode_results'
+// U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, SCL, SDA, /* reset=*/ U8X8_PIN_NONE);
 
 void setup() {
   pinMode(upSwitch,INPUT);
@@ -22,6 +22,9 @@ void setup() {
   pinMode(inputSwitch,INPUT);
   pinMode(pwLED, OUTPUT);
   pinMode(DP, INPUT);
+  pinMode(APPLE_PAIR_RESET_PIN, INPUT_PULLUP);
+  pinMode(INSEL0, OUTPUT);
+  pinMode(INSEL1, OUTPUT);
 
   // Setup timer interrupt
   // Timer: interrupt time and event setting. 
@@ -37,7 +40,7 @@ void setup() {
   timerAttachInterrupt(timer4, &onTimer4, true);
   
   // Set alarm to call onTimer function every second (value in microseconds).
-  timerAlarmWrite(timer1, 150000, true); // 150ms
+  timerAlarmWrite(timer1, 10000, true); // 10ms
   //timerAlarmWrite(timer2, 150000, true); // 150ms
   timerAlarmWrite(timer3, 200000, true); // 200ms
   timerAlarmWrite(timer4, 200000, true); // 200ms
@@ -49,43 +52,83 @@ void setup() {
   timerAlarmEnable(timer4);
 
   // NVRAM setting
-  preferences.begin("my-app", false);
-  volumeValue = preferences.getInt("value", 0);
-  preferences.end();
+  volPrefs.begin("volume", false);
+  volumeValue = volPrefs.getInt("value", 0);
+  volPrefs.end();
 
   if (volumeCounter != volumeValue ) {
-    preferences.putInt("value", volumeCounter);
-    preferences.end();
+    volPrefs.putInt("value", volumeCounter);
+    volPrefs.end();
   }
 
   volumeCounter = volumeValue;
   //
   Serial.begin(115200);
-  Wire.begin(SDA, SCL);
-  // SCLの周波数を400kHzに設定する
-  Wire.setClock(400000);
-  
-  oled.begin(20, 2);
-  oled.clear();
-  
   delay(500);
 
-  //i2cWrite(CPLD_ADR, 0x00, 0x10); // 入力ソースをXHに変更
+  WiFi.mode(WIFI_OFF);
+  btStop();
+
+  Wire.begin(SDA, SCL);
+  //Wire.setTimeOut(100);
+  // SCLの周波数を400kHzに設定する
+  Wire.setClock(400000);
+ 
+  oled.begin(20, 2);
+  oled.clear();
+ 
+  delay(500);
+ 
   i2cWrite(CPLD_ADR, 0x03, 0x01); // MCLKの停止を解除
   i2cWrite(CPLD_ADR, 0x03, 0x81); // RESETB解除　
-
+  
   delay(10);
 
   /* コンフィグピンのステータスを取得 */
   getInitialSetting(); 
-  /* 電源立ち上げシーケンス */
-  bootUp();
+
   /* 20x2 OLED表示器の初期化 */
   initSO2002A();
+
   // デバッグ用のLEDを点灯
   digitalWrite(pwLED,HIGH);
+
+  
+  // irrecv.enableIRIn(); // Start the receiver
+
+  IrReceiver.begin(IR_RECEIVE_PIN, ENABLE_LED_FEEDBACK);
+
+  irPrefs.begin("apple_ir", false);
+
+  applePaired = irPrefs.getBool("paired", false);
+  pairedAppleAddress = irPrefs.getUShort("addr", 0x0000);
+
+  if (applePaired) {
+    Serial.print("Apple Remote paired address loaded: 0x");
+    Serial.println(pairedAppleAddress, HEX);
+  }
+  else {
+    Serial.println("Apple Remote is not paired.");
+  }
+
+  // 入力ソースの初期選択
+  // 常にUSBを優先
+  if ((HWCNF[10] == 0x00)) {  // USB ans XH
+    digitalWrite(INSEL0, LOW);
+    digitalWrite(INSEL1, LOW);
+    }
+  else if (HWCNF[10] == 0x40) { // USB,XH and RJ45
+    digitalWrite(INSEL0, LOW);
+    digitalWrite(INSEL1, LOW);
+  }
+  else if (HWCNF[10] == 0xC0) {
+    digitalWrite(INSEL0, LOW);
+    digitalWrite(INSEL1, LOW);
+  }
+
+  /* 電源立ち上げシーケンス */
+  bootUp();
   readReg(0);
-  irrecv.enableIRIn(); // Start the receiver
 }
 
 void loop() {
@@ -112,20 +155,17 @@ void loop() {
     inputSelection();
   }
   
-  preferences.begin("my-app", false);
+  volPrefs.begin("volume", false);
   if (volumeCounter != volumeValue ) {
-    preferences.putInt("value", volumeCounter);
-    preferences.end();
+    volPrefs.putInt("value", volumeCounter);
+    volPrefs.end();
   }
 
-  //irReceiver();
   uint16_t FSR = detectFS(); //Serial.print("FSR = "); Serial.println(FSR);
-  //uint8_t BCK16 = detectBitClock();
-  //Serial.print("BCK16 = "); Serial.println(BCK16);
+  //uint8_t BCK16 = detectBitClock(); Serial.print("BCK16 = "); Serial.println(BCK16);
   //Serial.print("volumeCounter ="); Serial.println(volumeCounter);
-  changeFilter();
-  inputSelection(); //Serial.print("Input Source = "); Serial.println(inputSource);
-  modeSwitch(FSR, digiFil, inputSource);
+
+  modeSwitch(FSR, digiFil, count);
   messageOut(FSR, digiFil);
 
   //readReg(0);
@@ -137,7 +177,7 @@ uint8_t i2cRead(uint8_t sladr, uint8_t regadr){
   Wire.beginTransmission(sladr);
   Wire.write(regadr);
   Wire.endTransmission();
-  Wire.requestFrom(sladr, 1);
+  Wire.requestFrom((uint8_t)sladr, (uint8_t)1);
   return Wire.read();
 }
 
@@ -145,18 +185,38 @@ uint8_t i2cWrite(uint8_t sladr, uint8_t regadr, uint8_t wdata){
   Wire.beginTransmission(sladr);
   Wire.write(regadr);
   Wire.write(wdata);
-  Wire.endTransmission();
+  return Wire.endTransmission();
 }
 
 uint16_t detectFS() {
+  static uint16_t lastFSR = 0;
+  static uint8_t lastSampleRate = 0xFF;
+
+  uint8_t sampleRate1;
+  uint8_t sampleRate2;
   uint16_t FSR;
-  cpld.sampleRate = i2cRead(CPLD_ADR, 0x03);
+
+  // CPLDのサンプリングレートレジスタを2回読む
+  sampleRate1 = i2cRead(CPLD_ADR, 0x03);
+  delayMicroseconds(200);
+  sampleRate2 = i2cRead(CPLD_ADR, 0x03);
+
+  // 2回の読み取り値が一致しない場合は、前回値を保持する
+  if (sampleRate1 != sampleRate2) {
+    return lastFSR;
+  }
+
+  // ここから先は一致した値だけを使う
+  cpld.sampleRate = sampleRate1;
+  lastSampleRate = cpld.sampleRate;
+
   pcmRate = cpld.sampleRate & 0x3C;
   dsdRate = cpld.sampleRate & 0x42;
-  dsdOn = cpld.sampleRate & 0x01;
+  dsdOn   = cpld.sampleRate & 0x01;
+
   if (dsdOn == 0x00) {
-    if (pcmRate == 0x00 ) FSR = 32;
-    else if (pcmRate == 0x04) FSR = 44;
+    if      (pcmRate == 0x00) FSR = 44;
+    else if (pcmRate == 0x04) FSR = 32;
     else if (pcmRate == 0x08) FSR = 48;
     else if (pcmRate == 0x0C) FSR = 88;
     else if (pcmRate == 0x10) FSR = 96;
@@ -164,16 +224,17 @@ uint16_t detectFS() {
     else if (pcmRate == 0x18) FSR = 192;
     else if (pcmRate == 0x1C) FSR = 352;
     else if (pcmRate == 0x20) FSR = 384;
-    else FSR = 0;
+    else                      FSR = lastFSR;  // 不正値なら前回保持
+  } else {
+    if      (dsdRate == 0x00) FSR = 2822;   // DSD64
+    else if (dsdRate == 0x02) FSR = 5644;   // DSD128
+    else if (dsdRate == 0x40) FSR = 11289;  // DSD256
+    else if (dsdRate == 0x42) FSR = 22579;  // DSD512
+    else                      FSR = lastFSR; // 不正値なら前回保持
   }
-  else {
-    if (dsdRate == 0x00) FSR = 2822;
-    else if (dsdRate == 0x02) FSR = 5644;
-    else if (dsdRate == 0x40) FSR = 11289;
-    else if (dsdRate == 0x42) FSR = 22579;
-    else FSR = 0;
-  }
-  return(FSR);
+
+  lastFSR = FSR;
+  return FSR;
 }
 
 uint8_t detectBitClock() {
@@ -182,11 +243,13 @@ uint8_t detectBitClock() {
   return(bck16);
 }
 
-uint8_t getInitialSetting() {
+void getInitialSetting() {
   uint8_t temp = i2cRead(CPLD_ADR, 0x00);
   HWCNF[0] = temp & 0x07; // Device Name
   HWCNF[1] = temp & 0x18; // Input Select
   HWCNF[10] = temp & 0xC0;  // Detect Option Board
+  int hwcnf = HWCNF[10];
+  Serial.print("HWCNF[10] = "); Serial.println(hwcnf);
   temp = i2cRead(CPLD_ADR, 0x01);
   HWCNF[2] = temp & 0x38; // Digital Input Format
   HWCNF[3] = temp & 0xC0; // Stereo/Mono Mode

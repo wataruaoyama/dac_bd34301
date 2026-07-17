@@ -6,7 +6,10 @@
 #define inputSwitch 34
 #define pwLED 25
 #define DP 5
+#define INSEL0 19
+#define INSEL1 18
 
+// BD343xx レジスタアドレス
 #define SoftwareReset 0x00
 #define ChipVersion 0x01
 #define DigitalPower 0x02
@@ -39,17 +42,87 @@
 #define Boot1 0xD0
 #define Boot2 0xD3
 
-int receiver = 32; // Signal Pin of IR receiver to Arduino Digital Pin 32
+#define IR_RECEIVE_PIN 32
 
-Preferences preferences;
+// IR長押し/連続操作調整
+#define IR_HOLD_START_MS    400   // 長押しと判定するまでの時間
+#define IR_REPEAT_STEP_MS   150   // 長押し中の連続変化間隔
+
+static uint32_t irHoldStartTime = 0;
+static uint32_t irLastStepTime = 0;
+static uint8_t  irHoldCommand = 0;
+
+// Apple Remote A1294 実機確認済み command
+#define APPLE_MENU    0x03
+#define APPLE_PLAY    0x5F
+#define APPLE_RIGHT   0x06
+#define APPLE_LEFT    0x09
+#define APPLE_UP      0x0A
+#define APPLE_DOWN    0x0C
+#define APPLE_CENTER  0x5C
+
+// OptoSupply NEC address
+#define OPTO_ADDR     0x10
+
+// OptoSupply command
+#define OPTO_UP       0xA0
+#define OPTO_CENTER   0x20
+#define OPTO_DOWN     0x00
+#define OPTO_LEFT     0x10
+#define OPTO_RIGHT    0x80
+#define OPTO_A        0xF8
+#define OPTO_B        0x78
+#define OPTO_C        0x58
+#define OPTO_POWER    0xD8
+// old raw       new address/command
+// 0x08F705FA -> Address=0x10 Command=0xA0  // UP
+// 0x08F704FB -> Address=0x10 Command=0x20  // CENTER
+// 0x08F700FF -> Address=0x10 Command=0x00  // DOWN
+// 0x08F708F7 -> Address=0x10 Command=0x10  // LEFT
+// 0x08F701FE -> Address=0x10 Command=0x80  // RIGHT
+// 0x08F71FE0 -> Address=0x10 Command=0xF8  // A
+// 0x08F71EE1 -> Address=0x10 Command=0x78  // B
+// 0x08F71AE5 -> Address=0x10 Command=0x58  // C
+// 0x08F71BE4 -> Address=0x10 Command=0xD8  // POWER
+
+// 秋月などの小型リモコン
+#define NEC_REPEAT    0xFFFFFFFFUL
+
+// Apple Remote ペアリング保存用
+Preferences irPrefs;
+
+static bool applePaired = false;
+static uint16_t pairedAppleAddress = 0x0000;
+
+// Apple Remote repeat処理用
+static uint8_t lastAppleCommand = 0;
+
+// OptoSupply / NEC repeat処理用
+static uint32_t lastNecValue = 0;
+
+// Apple Remote CENTER/OK 長押し解除用
+#define APPLE_CENTER_HOLD_TIME_MS  2000
+
+static bool appleCenterHolding = false;
+static bool appleCenterUnpairDone = false;
+static uint32_t appleCenterStartTime = 0;
+
+// Apple Remote ペアリング強制解除ピン
+// GPIO12をLowにすると解除
+#define APPLE_PAIR_RESET_PIN  27
+
+// チャタリング対策
+#define PAIR_RESET_DEBOUNCE_MS  50
+
+// int receiver = 32; // Signal Pin of IR receiver to Arduino Digital Pin 32
+
+// Volume レベル保存用
+Preferences volPrefs; //preferences;
 int volumeValue; 
 
 int volumeCounter;
-//int state;
 volatile int cnt = 3;
 volatile int count = 1;
-//volatile int buttonState = HIGH;
-//volatile int inswState = HIGH;
 volatile int blynkModeButton;
 volatile int blynkMuteButton;
 
@@ -113,25 +186,15 @@ char outputLevel1[]     = "5.6/5/5Vpp";
 char outputLevel2[]     = "5/5/5Vpp";
 char outputLevel3[]     = "5/5/5Vpp";
 
+char DigitalMute[]      = "   MUTE";
+
 volatile int DSDON;
-//volatile int FS;
-//volatile int DSD64;
-//volatile int mono;
+
 uint8_t dsdOn, pcmRate, dsdRate;
 uint8_t digiFil = 1;
 uint8_t inputSource = 1;
-//int deviceName;
-//uint8_t DEVNAME,INSEL,DIF,MONO_ST;
-//int DEM,DSDF;
-//bool DSDD;
-//bool GC0,GC1;
-//bool mute = true;
 
-//int prevMode = 1;
-//int prevPcmRate = 0;
-//int prevDsdRate = 0;
-//int prevFil = 1;
-//uint8_t prevInputSource = 1;
+bool displayMute = false;
 
 uint8_t HWCNF[12]; //{DEVNAME, INSEL, DIF, MONO_ST, DSDF, INPOL, DEM, OSR, HPC, PAC, OPT, CHIP_VERSION};
 uint8_t ptrSlave;
