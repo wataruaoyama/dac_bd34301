@@ -8,6 +8,31 @@
 #define DP 5
 #define INSEL0 19
 #define INSEL1 18
+#define AUDIO_DEBUG 0
+
+// -----------------------------------------------------------------------------
+// Audio signal detector
+// -----------------------------------------------------------------------------
+
+// ESP32に接続する音声信号
+#define AUDIO_BCLK_PIN 26
+#define AUDIO_LRCK_PIN 33
+
+// PCNTユニット
+#define BCLK_PCNT_UNIT PCNT_UNIT_0
+#define LRCK_PCNT_UNIT PCNT_UNIT_1
+
+// 500us測定なら、49.152MHzでも24576カウントでPCNT上限内
+#define AUDIO_MEASUREMENT_US 500
+
+// PCM/DSD判定閾値
+#define DSD_EDGE_RATIO_THRESHOLD 0.080f
+
+// 同じ判定がこの回数続いたら確定
+#define AUDIO_DETECT_STABLE_COUNT 3
+
+// 信号停止時に直前のレートを保持
+#define AUDIO_HOLD_LAST_RATE 0
 
 // BD343xx レジスタアドレス
 #define SoftwareReset 0x00
@@ -137,20 +162,21 @@ char SuperSlow[]        = "Super Slow       ";
 char LowDispersion[]    = "Low Dispersion   ";
 char filterBlank[]      = "                 ";
 
-char freq32[]           = "  32kHz  ";
-char freq44[]           = "  44.1kHz";
-char freq48[]           = "  48kHz  ";
-char freq88[]           = "  88.2kHz";
-char freq96[]           = "  96kHz  ";
-char freq176[]          = " 176.4kHz";
-char freq192[]          = " 192kHz  ";
-char freq352[]          = " 352.8kHz";
-char freq384[]          = " 384kHz  ";
-char freqBlank[]        = "         ";
-char freqDsd64[]        = " 2.8MHz  ";
-char freqDsd128[]       = " 5.6MHz  ";
-char freqDsd256[]       = " 11.2MHz ";
-char freqDsd512[]       = " 22.4MHz ";
+char noSignal[]         = "     NO SIGNAL      ";
+char freq32[]           = "  32kHz   ";
+char freq44[]           = "  44.1kHz ";
+char freq48[]           = "  48kHz   ";
+char freq88[]           = "  88.2kHz ";
+char freq96[]           = "  96kHz   ";
+char freq176[]          = " 176.4kHz ";
+char freq192[]          = " 192kHz   ";
+char freq352[]          = " 352.8kHz ";
+char freq384[]          = " 384kHz   ";
+char freqBlank[]        = "          ";
+char freqDsd64[]        = " 2.8MHz   ";
+char freqDsd128[]       = " 5.6MHz   ";
+char freqDsd256[]       = " 11.2MHz  ";
+char freqDsd512[]       = " 22.4MHz  ";
 
 char audioIF0[]         = "16bit LSB";
 char audioIF1[]         = "20bit LSB";
@@ -193,6 +219,33 @@ volatile int DSDON;
 uint8_t dsdOn, pcmRate, dsdRate;
 uint8_t digiFil = 1;
 uint8_t inputSource = 1;
+
+enum AudioSignalMode {
+  AUDIO_MODE_NONE = 0,
+  AUDIO_MODE_PCM,
+  AUDIO_MODE_DSD
+};
+
+// 確定済み判定
+AudioSignalMode detectedAudioMode = AUDIO_MODE_NONE;
+
+// 安定化判定用
+AudioSignalMode pendingAudioMode  = AUDIO_MODE_NONE;
+
+// 今回1回分の測定結果
+AudioSignalMode candidateAudioMode = AUDIO_MODE_NONE;
+uint16_t candidateAudioFS = 0;
+
+// 確定・安定用
+uint16_t lastValidFS = 0;
+uint16_t pendingFS = 0;
+uint8_t audioStableCount = 0;
+
+uint32_t measuredBclkHz = 0;
+uint32_t measuredLrckEdgeHz = 0;
+
+int16_t measuredBclkCount = 0;
+int16_t measuredLrckCount = 0;
 
 bool displayMute = false;
 

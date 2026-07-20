@@ -2,6 +2,7 @@
 #include "SO2002A_I2C.h"
 #include <U8g2lib.h>
 #include <Preferences.h>
+#include "driver/pcnt.h"
 #include "BD34301.h"
 #include "IRremote.h"
 #include <WiFi.h>
@@ -25,7 +26,10 @@ void setup() {
   pinMode(APPLE_PAIR_RESET_PIN, INPUT_PULLUP);
   pinMode(INSEL0, OUTPUT);
   pinMode(INSEL1, OUTPUT);
+  pinMode(AUDIO_BCLK_PIN, INPUT);
+  pinMode(AUDIO_LRCK_PIN, INPUT);
 
+  
   // Setup timer interrupt
   // Timer: interrupt time and event setting. 
   timer1 = timerBegin(0, 80, true);
@@ -74,6 +78,8 @@ void setup() {
   // SCLの周波数を400kHzに設定する
   Wire.setClock(400000);
  
+  initAudioSignalDetector();
+  
   oled.begin(20, 2);
   oled.clear();
  
@@ -161,15 +167,84 @@ void loop() {
     volPrefs.end();
   }
 
-  uint16_t FSR = detectFS(); //Serial.print("FSR = "); Serial.println(FSR);
-  //uint8_t BCK16 = detectBitClock(); Serial.print("BCK16 = "); Serial.println(BCK16);
-  //Serial.print("volumeCounter ="); Serial.println(volumeCounter);
+uint16_t FSR = detectFS();
 
-  modeSwitch(FSR, digiFil, count);
-  messageOut(FSR, digiFil);
+#if AUDIO_DEBUG
+  static uint32_t lastAudioDebugTime = 0;
 
-  //readReg(0);
-  
+  if ((millis() - lastAudioDebugTime) >= 500) {
+    lastAudioDebugTime = millis();
+
+    Serial.print("BCLK count=");
+    Serial.print(measuredBclkCount);
+
+    Serial.print(", LRCK/DATA count=");
+    Serial.print(measuredLrckCount);
+
+    Serial.print(", BCLK=");
+    Serial.print(measuredBclkHz);
+
+    Serial.print(" Hz, LRCK/DATA edge=");
+    Serial.print(measuredLrckEdgeHz);
+
+    Serial.print(" Hz, ratio=");
+
+    if (measuredBclkHz != 0) {
+      Serial.print(
+        (float)measuredLrckEdgeHz /
+        (float)measuredBclkHz,
+        4);
+    }
+    else {
+      Serial.print("0.0000");
+    }
+
+    Serial.print(", candidate=");
+
+    switch (candidateAudioMode) {
+      case AUDIO_MODE_PCM:
+        Serial.print("PCM");
+        break;
+
+      case AUDIO_MODE_DSD:
+        Serial.print("DSD");
+        break;
+
+      default:
+        Serial.print("NONE");
+        break;
+    }
+
+    Serial.print(", candidateFS=");
+    Serial.print(candidateAudioFS);
+
+    Serial.print(", confirmed=");
+
+    switch (detectedAudioMode) {
+      case AUDIO_MODE_PCM:
+        Serial.print("PCM");
+        break;
+
+      case AUDIO_MODE_DSD:
+        Serial.print("DSD");
+        break;
+
+      default:
+        Serial.print("NONE");
+        break;
+    }
+
+    Serial.print(", dsdOn=");
+    Serial.print(dsdOn);
+
+    Serial.print(", FSR=");
+    Serial.println(FSR);
+  }
+#endif
+
+modeSwitch(FSR, digiFil, count);
+messageOut(FSR, digiFil);
+
   delay(10);
 }
 
@@ -186,55 +261,6 @@ uint8_t i2cWrite(uint8_t sladr, uint8_t regadr, uint8_t wdata){
   Wire.write(regadr);
   Wire.write(wdata);
   return Wire.endTransmission();
-}
-
-uint16_t detectFS() {
-  static uint16_t lastFSR = 0;
-  static uint8_t lastSampleRate = 0xFF;
-
-  uint8_t sampleRate1;
-  uint8_t sampleRate2;
-  uint16_t FSR;
-
-  // CPLDのサンプリングレートレジスタを2回読む
-  sampleRate1 = i2cRead(CPLD_ADR, 0x03);
-  delayMicroseconds(200);
-  sampleRate2 = i2cRead(CPLD_ADR, 0x03);
-
-  // 2回の読み取り値が一致しない場合は、前回値を保持する
-  if (sampleRate1 != sampleRate2) {
-    return lastFSR;
-  }
-
-  // ここから先は一致した値だけを使う
-  cpld.sampleRate = sampleRate1;
-  lastSampleRate = cpld.sampleRate;
-
-  pcmRate = cpld.sampleRate & 0x3C;
-  dsdRate = cpld.sampleRate & 0x42;
-  dsdOn   = cpld.sampleRate & 0x01;
-
-  if (dsdOn == 0x00) {
-    if      (pcmRate == 0x00) FSR = 44;
-    else if (pcmRate == 0x04) FSR = 32;
-    else if (pcmRate == 0x08) FSR = 48;
-    else if (pcmRate == 0x0C) FSR = 88;
-    else if (pcmRate == 0x10) FSR = 96;
-    else if (pcmRate == 0x14) FSR = 176;
-    else if (pcmRate == 0x18) FSR = 192;
-    else if (pcmRate == 0x1C) FSR = 352;
-    else if (pcmRate == 0x20) FSR = 384;
-    else                      FSR = lastFSR;  // 不正値なら前回保持
-  } else {
-    if      (dsdRate == 0x00) FSR = 2822;   // DSD64
-    else if (dsdRate == 0x02) FSR = 5644;   // DSD128
-    else if (dsdRate == 0x40) FSR = 11289;  // DSD256
-    else if (dsdRate == 0x42) FSR = 22579;  // DSD512
-    else                      FSR = lastFSR; // 不正値なら前回保持
-  }
-
-  lastFSR = FSR;
-  return FSR;
 }
 
 uint8_t detectBitClock() {

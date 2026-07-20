@@ -6,27 +6,34 @@
   
  *************************************************************/
 void messageOut(uint16_t FS, uint8_t digiFil) {
-  cpld.sampleRate = i2cRead(CPLD_ADR, 0x03);
-  DSDON = cpld.sampleRate & 0x01;
-
-  displayPlayMode();
-  displayATT(volumeCounter);
-  displayFs(FS);
-  displayDigitalFilter(digiFil);
+  // cpld.sampleRate = i2cRead(CPLD_ADR, 0x03);
+  // DSDON = cpld.sampleRate & 0x01;
+  if ( FS == 0) {
+    oled.setCursor(0, 0);
+    oled.print(noSignal);
+    oled.setCursor(0, 1);
+    oled.print(filterBlank);
+  }
+  else {
+    displayPlayMode();
+    displayATT(volumeCounter);
+    displayFs(FS);
+    displayDigitalFilter(digiFil);
+  }
   displayInputInterface();
 }
 
 /* 再生モードの表示 */
 void displayPlayMode() {
+  // 表示位置を(0. 0)にする
+  oled.setCursor(0, 0);
   // 再生モードがDSDの場合
-  if ( DSDON == 0x01) {
-    // (0.0)の位置にDSDを表示
-    oled.setCursor(0, 0);
+  if ( dsdOn == 0x01) {
+    // DSDを表示
     oled.print("DSD");
   // PCMの場合
-  } else if ( DSDON == 0x00 ){
-    // (0.0)の位置にPCMを表示
-    oled.setCursor(0, 0);
+  } else if ( dsdOn == 0x00 ){
+    // PCMを表示
     oled.print("PCM");
   }
 }
@@ -96,7 +103,7 @@ void displayFs(uint16_t FS) {
   // 表示位置を(3.0)にする
   oled.setCursor(3, 0);
   // 再生モードがPCMの場合
-  if ( DSDON == 0x00 ) {
+  if ( dsdOn == 0x00 ) {
     // サンプリング周波数が32kHzの場合
     if ( FS == 32 ) {
       oled.print(freq32);
@@ -126,7 +133,7 @@ void displayFs(uint16_t FS) {
       oled.print(freq384);
     }
   // 再生モードがDSDで
-  } else if (DSDON == 0x01 ) {
+  } else if (dsdOn == 0x01 ) {
     // DSDデータストリームレートが2.8MHz(DSD64)の場合
     if ( FS == 2822 ) {
       oled.print(freqDsd64);
@@ -147,11 +154,11 @@ void displayFs(uint16_t FS) {
 void displayDigitalFilter(uint8_t digiFil) {
   oled.setCursor(0, 1);
   // 再生モードがDSDの場合
-  if ( DSDON == 0x01 ) {
+  if ( dsdOn == 0x01 ) {
     // 表示しない
     oled.print(filterBlank);
   // 再生モードがPCMの場合で
-  } else if ( DSDON == 0x00 ) {
+  } else if ( dsdOn == 0x00 ) {
     // digiFilが'1'の場合
     if ( digiFil == 1 ) {
       // シャープ
