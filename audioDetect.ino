@@ -272,17 +272,32 @@ static uint16_t stabilizeAudioDetection(
   AudioSignalMode candidateMode,
   uint16_t candidateFS)
 {
+  /*
+   * 無信号も候補の一つとして連続回数を数える。
+   */
   if ((candidateMode == AUDIO_MODE_NONE) ||
       (candidateFS == 0)) {
 
-#if AUDIO_HOLD_LAST_RATE
+    if ((pendingAudioMode == AUDIO_MODE_NONE) &&
+        (pendingFS == 0)) {
+
+      if (audioStableCount < AUDIO_DETECT_STABLE_COUNT) {
+        audioStableCount++;
+      }
+    }
+    else {
+      pendingAudioMode = AUDIO_MODE_NONE;
+      pendingFS = 0;
+      audioStableCount = 1;
+    }
+
+    if (audioStableCount >= AUDIO_DETECT_STABLE_COUNT) {
+      detectedAudioMode = AUDIO_MODE_NONE;
+      dsdOn = 0;
+      lastValidFS = 0;
+    }
+
     return lastValidFS;
-#else
-    detectedAudioMode = AUDIO_MODE_NONE;
-    dsdOn = 0;
-    lastValidFS = 0;
-    return 0;
-#endif
   }
 
   if ((candidateMode == pendingAudioMode) &&
