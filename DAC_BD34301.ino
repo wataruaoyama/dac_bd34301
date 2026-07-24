@@ -120,16 +120,19 @@ void setup() {
   // 入力ソースの初期選択
   // 常にUSBを優先
   if ((HWCNF[10] == 0x00)) {  // USB ans XH
-    digitalWrite(INSEL0, LOW);
-    digitalWrite(INSEL1, LOW);
+    i2cWrite(CPLD_ADR, 0x00, 0x00);
+    // digitalWrite(INSEL0, LOW);
+    // digitalWrite(INSEL1, LOW);
     }
   else if (HWCNF[10] == 0x40) { // USB,XH and RJ45
-    digitalWrite(INSEL0, LOW);
-    digitalWrite(INSEL1, LOW);
+    i2cWrite(CPLD_ADR, 0x00, 0x00);
+    // digitalWrite(INSEL0, LOW);
+    // digitalWrite(INSEL1, LOW);
   }
   else if (HWCNF[10] == 0xC0) {
-    digitalWrite(INSEL0, LOW);
-    digitalWrite(INSEL1, LOW);
+    i2cWrite(CPLD_ADR, 0x00, 0x00);
+    // digitalWrite(INSEL0, LOW);
+    // digitalWrite(INSEL1, LOW);
   }
 
   /* 電源立ち上げシーケンス */

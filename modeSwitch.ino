@@ -1,7 +1,7 @@
 
 void modeSwitch(uint16_t FS, uint8_t digiFil, uint8_t inputSource) {
 
-  uint8_t DSD = digitalRead(DP);
+  // uint8_t DSD = digitalRead(DP);
 
   static int prevMode = -1;          // -1: 未初期化
   static int prevPcmRate = 0;
@@ -10,12 +10,12 @@ void modeSwitch(uint16_t FS, uint8_t digiFil, uint8_t inputSource) {
   static uint8_t prevInputSource = 0xFF;  // 未初期化扱い
 
   // 初回、入力ソース変更、PCM/DSDモード変更時はここでまとめて処理
-  if ((prevMode != DSD) || (prevInputSource != inputSource)) {
+  if ((prevMode != dsdOn) || (prevInputSource != inputSource)) {
     Serial.println("Input Source or play mode is changed!");
 
     sequenceOne();
     
-    if (DSD == 0) {
+    if (dsdOn == 0) {
       // PCM mode
       sequenceTwo(FS, digiFil);
       sequenceFour();
@@ -31,7 +31,7 @@ void modeSwitch(uint16_t FS, uint8_t digiFil, uint8_t inputSource) {
       prevDsdRate = FS;
     }
 
-    prevMode = DSD;
+    prevMode = dsdOn;
     prevInputSource = inputSource;
 
     return;
@@ -39,7 +39,7 @@ void modeSwitch(uint16_t FS, uint8_t digiFil, uint8_t inputSource) {
 
   // ここから下は、同じ入力ソース・同じPCM/DSDモード中の変更だけを見る
 
-  if (DSD == 0) {
+  if (dsdOn == 0) {
     // PCM mode中にFSまたはデジタルフィルタが変わった場合
     if ((prevPcmRate != FS) || (prevFil != digiFil)) {
       Serial.println("PCM FS or digital filter is changed!");

@@ -6,8 +6,8 @@
 #define inputSwitch 34
 #define pwLED 25
 #define DP 5
-#define INSEL0 19
-#define INSEL1 18
+#define INSEL0 26
+#define INSEL1 33
 #define AUDIO_DEBUG 0
 
 // -----------------------------------------------------------------------------
@@ -15,8 +15,8 @@
 // -----------------------------------------------------------------------------
 
 // ESP32に接続する音声信号
-#define AUDIO_BCLK_PIN 26
-#define AUDIO_LRCK_PIN 33
+#define AUDIO_BCLK_PIN 19
+#define AUDIO_LRCK_PIN 18
 
 // PCNTユニット
 #define BCLK_PCNT_UNIT PCNT_UNIT_0
