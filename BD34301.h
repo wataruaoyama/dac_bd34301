@@ -6,8 +6,13 @@
 #define inputSwitch 34
 #define pwLED 25
 #define DP 5
-#define INSEL0 26
-#define INSEL1 33
+
+// ESP32 -> CPLD デジタルミュート制御
+#define MUTE_REQ_PIN 26   // HIGH: mute、LOW: normal
+#define DSD_MODE_PIN 33   // HIGH: DSD、LOW: PCM
+
+#define CPLD_MUTE_RELEASE_DELAY_MS 100
+
 #define AUDIO_DEBUG 0
 
 // -----------------------------------------------------------------------------

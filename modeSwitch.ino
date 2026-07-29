@@ -67,13 +67,18 @@ void modeSwitch(uint16_t FS, uint8_t digiFil, uint8_t inputSource) {
 }
 
 void sequenceOne() {
+  // DACの設定変更前にCPLD側をデジタルミュート
+  setCpldMute(true);
+
   uint8_t i;
+
   for(i=0; i<=ptrSlave; i++) {
     i2cWrite(BD34301_CHIP[i], Mute, 0x00); // ミュート　オン
     i2cWrite(BD34301_CHIP[i], DigitalPower, 0x00);  // デジタル・パワー　オフ
     i2cWrite(BD34301_CHIP[i], SoftwareReset, 0x00); // ソフト・リセット　オン
   }
 }
+
 
 // PCM モード時の設定
 void sequenceTwo(uint16_t FS, uint8_t digiFil) {
@@ -233,6 +238,11 @@ void sequenceThree(uint16_t FS) {
 
 void sequenceFour() {
   uint8_t i;
+
+  // CPLDへPCMモードを通知
+  // PCMミュート時はDATAを0固定する
+  setCpldDsdMode(false);
+
   for(i=0; i<=ptrSlave; i++) {
     i2cWrite(BD34301_CHIP[i], SoftwareReset, 0x01);   // ソフト・リセット　オフ
     i2cWrite(BD34301_CHIP[i], DigitalPower, 0x01);    // デジタル・パワー　オン
@@ -241,14 +251,27 @@ void sequenceFour() {
     i2cWrite(BD34301_CHIP[i], Mute, 0x03);            // ミュート オフ
     displayMute = false;
   }
+
+  // DACとクロックが安定してからCPLDミュートを解除
+  delay(CPLD_MUTE_RELEASE_DELAY_MS);
+  setCpldMute(false);
 }
 
 void sequenceFive() {
   uint8_t i;
-  for(i=0; i<=ptrSlave; i++) {
+
+  // CPLDへDSDモードを通知
+  // DSDミュート時は010101...を送出する
+  setCpldDsdMode(true);
+
+  for (i = 0; i <= ptrSlave; i++) {
     i2cWrite(BD34301_CHIP[i], SoftwareReset, 0x01);
     i2cWrite(BD34301_CHIP[i], DigitalPower, 0x01);
     i2cWrite(BD34301_CHIP[i], Mute, 0x03);
     displayMute = false;
   }
+
+  // DACとDSDクロックが安定してからCPLDミュートを解除
+  delay(CPLD_MUTE_RELEASE_DELAY_MS);
+  setCpldMute(false);
 }

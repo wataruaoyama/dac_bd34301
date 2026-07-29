@@ -24,11 +24,17 @@ void setup() {
   pinMode(pwLED, OUTPUT);
   pinMode(DP, INPUT);
   pinMode(APPLE_PAIR_RESET_PIN, INPUT_PULLUP);
-  pinMode(INSEL0, OUTPUT);
-  pinMode(INSEL1, OUTPUT);
+  pinMode(MUTE_REQ_PIN, OUTPUT);
+  pinMode(DSD_MODE_PIN, OUTPUT);
+
   pinMode(AUDIO_BCLK_PIN, INPUT);
   pinMode(AUDIO_LRCK_PIN, INPUT);
 
+  // 起動直後は必ずミュート
+  digitalWrite(MUTE_REQ_PIN, HIGH);
+
+  // 初期状態はPCM扱い
+  digitalWrite(DSD_MODE_PIN, LOW);
   
   // Setup timer interrupt
   // Timer: interrupt time and event setting. 
@@ -245,7 +251,37 @@ uint16_t FSR = detectFS();
   }
 #endif
 
-modeSwitch(FSR, digiFil, count);
+static bool previousSignalValid = false;
+
+bool signalValid =
+  (detectedAudioMode != AUDIO_MODE_NONE) &&
+  (FSR != 0);
+
+if (!signalValid) {
+  // 無信号になったら即ミュート
+  setCpldMute(true);
+
+  previousSignalValid = false;
+}
+else {
+  // PCM/DSDモードをCPLDへ通知
+  setCpldDsdMode(
+    detectedAudioMode == AUDIO_MODE_DSD
+  );
+
+  // DAC設定変更が必要なら、modeSwitch()内で
+  // sequenceOne()～sequenceFive()が実行される
+  modeSwitch(FSR, digiFil, count);
+
+  // 同じモード・同じFsで信号が復帰した場合
+  if (!previousSignalValid) {
+    delay(CPLD_MUTE_RELEASE_DELAY_MS);
+    setCpldMute(false);
+  }
+
+  previousSignalValid = true;
+}
+
 messageOut(FSR, digiFil);
 
   delay(10);
@@ -326,4 +362,20 @@ uint8_t readChipVersion() {
   if (Version<16) Serial.print("0");
   Serial.println(Version, HEX);
   return (Version);
+}
+
+void setCpldMute(bool muteOn)
+{
+  digitalWrite(
+    MUTE_REQ_PIN,
+    muteOn ? HIGH : LOW
+  );
+}
+
+void setCpldDsdMode(bool dsdMode)
+{
+  digitalWrite(
+    DSD_MODE_PIN,
+    dsdMode ? HIGH : LOW
+  );
 }
