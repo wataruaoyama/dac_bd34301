@@ -31,6 +31,12 @@
 // 500us測定なら、49.152MHzでも24576カウントでPCNT上限内
 #define AUDIO_MEASUREMENT_US 500
 
+// 500usのFs測定中、50usごとにBCLK停止を確認する
+#define AUDIO_FAST_CHECK_US 50
+
+// 50us間のBCLKエッジがこれ未満なら停止と判断
+#define AUDIO_FAST_MIN_BCLK_COUNT 10
+
 // PCM/DSD判定閾値
 #define DSD_EDGE_RATIO_THRESHOLD 0.080f
 

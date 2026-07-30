@@ -63,31 +63,79 @@ static void measureAudioSignals(
   int16_t bclkCount = 0;
   int16_t lrckCount = 0;
 
-  // 両カウンタを停止
+  int16_t previousBclkCount = 0;
+  int16_t currentBclkCount = 0;
+
   pcnt_counter_pause(BCLK_PCNT_UNIT);
   pcnt_counter_pause(LRCK_PCNT_UNIT);
 
-  // 両カウンタをクリア
   pcnt_counter_clear(BCLK_PCNT_UNIT);
   pcnt_counter_clear(LRCK_PCNT_UNIT);
 
-  // ほぼ同時に測定開始
+  uint32_t startUs = micros();
+
   pcnt_counter_resume(BCLK_PCNT_UNIT);
   pcnt_counter_resume(LRCK_PCNT_UNIT);
 
-  delayMicroseconds(measurementTimeUs);
+  /*
+   * カウンタは500us連続して動かす。
+   * 途中で50usごとの増分だけ確認する。
+   */
+  for (uint32_t checkUs = AUDIO_FAST_CHECK_US;
+       checkUs <= measurementTimeUs;
+       checkUs += AUDIO_FAST_CHECK_US) {
 
-  // ほぼ同時に測定終了
+    while ((uint32_t)(micros() - startUs) < checkUs) {
+      // 50us境界まで待つ
+    }
+
+    pcnt_get_counter_value(
+      BCLK_PCNT_UNIT,
+      &currentBclkCount
+    );
+
+    if (currentBclkCount < 0) {
+      currentBclkCount = 0;
+    }
+
+    int16_t intervalCount =
+      currentBclkCount - previousBclkCount;
+
+    if (intervalCount < 0) {
+      intervalCount = 0;
+    }
+
+    /*
+     * BCLK停止を検出したら、
+     * 500us測定終了を待たずに即ミュート。
+     */
+    if (intervalCount < AUDIO_FAST_MIN_BCLK_COUNT) {
+
+      if (!cpldEarlyMuteActive) {
+        setCpldMute(true);
+        cpldEarlyMuteActive = true;
+
+#if AUDIO_DEBUG_NOIZE
+        Serial.println("Fast mute: BCLK lost");
+#endif
+      }
+    }
+
+    previousBclkCount = currentBclkCount;
+  }
+
   pcnt_counter_pause(BCLK_PCNT_UNIT);
   pcnt_counter_pause(LRCK_PCNT_UNIT);
 
   pcnt_get_counter_value(
     BCLK_PCNT_UNIT,
-    &bclkCount);
+    &bclkCount
+  );
 
   pcnt_get_counter_value(
     LRCK_PCNT_UNIT,
-    &lrckCount);
+    &lrckCount
+  );
 
   if (bclkCount < 0) {
     bclkCount = 0;
@@ -101,13 +149,8 @@ static void measureAudioSignals(
   measuredLrckCount = lrckCount;
 
   /*
-   * 先にuint64_tへキャストする。
-   *
-   * DSD256:
-   *   5645 × 1,000,000 = 5,645,000,000
-   *
-   * 32bitではオーバーフローするため、
-   * 64bitで乗算してから測定時間で割る。
+   * Fs計算には500us全体のカウントを使用する。
+   * 44.1kHz/48kHz判定精度は従来と同じ。
    */
   *bclkHz =
     (uint32_t)(

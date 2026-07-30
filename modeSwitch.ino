@@ -83,7 +83,17 @@ void sequenceOne() {
 // PCM モード時の設定
 void sequenceTwo(uint16_t FS, uint8_t digiFil) {
   uint8_t i;
-  for(i=0; i<=ptrSlave; i++) {
+
+  /*
+   * sequenceOne()でBD34301をSoftware Reset状態にしてから、
+   * CPLD出力をPCMゼロ形式へ切り替える。
+   */
+  setCpldDsdMode(false);
+
+  // CPLD側の同期とPCMゼロ出力が安定する時間
+  delayMicroseconds(100);
+
+  for (i = 0; i <= ptrSlave; i++) {
     if (FS == 32) {
       if (HWCNF[7] >= 0x08) { // Recomanded settings
         i2cWrite(BD34301_CHIP[i], Clock1, 0x03);
@@ -210,6 +220,16 @@ void sequenceTwo(uint16_t FS, uint8_t digiFil) {
 // DSD モード時の設定
 void sequenceThree(uint16_t FS) {
   uint8_t i;
+
+  /*
+   * sequenceOne()でBD34301をSoftware Reset状態にしてから、
+   * CPLD出力をDSD無音形式へ切り替える。
+   */
+  setCpldDsdMode(true);
+
+  delayMicroseconds(100);
+
+  for (i = 0; i <= ptrSlave; i++) {
   for(i=0; i<=ptrSlave; i++) {
     i2cWrite(BD34301_CHIP[i], Clock1, 0x00);
     i2cWrite(BD34301_CHIP[i], Clock2, 0x00);
@@ -236,25 +256,32 @@ void sequenceThree(uint16_t FS) {
   }
 }
 
+
 void sequenceFour() {
   uint8_t i;
 
-  // CPLDへPCMモードを通知
-  // PCMミュート時はDATAを0固定する
-  setCpldDsdMode(false);
+  // setCpldDsdMode(false);
 
-  for(i=0; i<=ptrSlave; i++) {
-    i2cWrite(BD34301_CHIP[i], SoftwareReset, 0x01);   // ソフト・リセット　オフ
-    i2cWrite(BD34301_CHIP[i], DigitalPower, 0x01);    // デジタル・パワー　オン
-    i2cWrite(BD34301_CHIP[i], RAMClear, 0x80);        // ラム・クリア　オン
-    i2cWrite(BD34301_CHIP[i], RAMClear, 0x00);        // ラム・クリア　オフ
-    i2cWrite(BD34301_CHIP[i], Mute, 0x03);            // ミュート オフ
+  for (i = 0; i <= ptrSlave; i++) {
+    i2cWrite(BD34301_CHIP[i], SoftwareReset, 0x01);
+    i2cWrite(BD34301_CHIP[i], DigitalPower, 0x01);
+    i2cWrite(BD34301_CHIP[i], RAMClear, 0x80);
+    i2cWrite(BD34301_CHIP[i], RAMClear, 0x00);
+    // i2cWrite(BD34301_CHIP[i], Mute, 0x03);
     displayMute = false;
   }
 
-  // DACとクロックが安定してからCPLDミュートを解除
-  delay(CPLD_MUTE_RELEASE_DELAY_MS);
-  setCpldMute(false);
+#if AUDIO_DEBUG_NOIZE
+  Serial.println("PCM configured; waiting 1000 ms");
+#endif
+
+  delay(1000);
+
+#if AUDIO_DEBUG_NOIZE
+  Serial.println("PCM CPLD mute release NOW");
+#endif
+
+  // setCpldMute(false);
   cpldEarlyMuteActive = false;
 }
 
@@ -263,7 +290,7 @@ void sequenceFive() {
 
   // CPLDへDSDモードを通知
   // DSDミュート時は010101...を送出する
-  setCpldDsdMode(true);
+  // setCpldDsdMode(true);
 
   for (i = 0; i <= ptrSlave; i++) {
     i2cWrite(BD34301_CHIP[i], SoftwareReset, 0x01);

@@ -266,9 +266,11 @@ if (!signalValid) {
 }
 else {
   // PCM/DSDモードをCPLDへ通知
+  /*
   setCpldDsdMode(
     detectedAudioMode == AUDIO_MODE_DSD
   );
+  */
 
   // DAC設定変更が必要なら、modeSwitch()内で
   // sequenceOne()～sequenceFive()が実行される
