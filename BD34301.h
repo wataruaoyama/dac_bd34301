@@ -14,6 +14,7 @@
 #define CPLD_MUTE_RELEASE_DELAY_MS 100
 
 #define AUDIO_DEBUG 0
+#define AUDIO_DEBUG_NOIZE 1
 
 // -----------------------------------------------------------------------------
 // Audio signal detector
@@ -253,6 +254,8 @@ int16_t measuredBclkCount = 0;
 int16_t measuredLrckCount = 0;
 
 bool displayMute = false;
+
+bool cpldEarlyMuteActive = false;
 
 uint8_t HWCNF[12]; //{DEVNAME, INSEL, DIF, MONO_ST, DSDF, INPOL, DEM, OSR, HPC, PAC, OPT, CHIP_VERSION};
 uint8_t ptrSlave;

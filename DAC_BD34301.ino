@@ -261,6 +261,7 @@ if (!signalValid) {
   // 無信号になったら即ミュート
   setCpldMute(true);
 
+  cpldEarlyMuteActive = true;
   previousSignalValid = false;
 }
 else {
@@ -273,11 +274,24 @@ else {
   // sequenceOne()～sequenceFive()が実行される
   modeSwitch(FSR, digiFil, count);
 
-  // 同じモード・同じFsで信号が復帰した場合
-  if (!previousSignalValid) {
-    delay(CPLD_MUTE_RELEASE_DELAY_MS);
-    setCpldMute(false);
+  /*
+  * Early mute後に同じモード・同じFsへ戻った場合、
+  * modeSwitch()では再設定されないため、ここで解除する。
+  */
+
+  if ((!previousSignalValid) || cpldEarlyMuteActive) {
+
+  #if AUDIO_DEBUG_NOIZE
+    Serial.println("Loop wanted to release CPLD mute");
+  #endif
+
+    // delay(CPLD_MUTE_RELEASE_DELAY_MS);
+    // setCpldMute(false);
+
+  
+    // cpldEarlyMuteActive = false;
   }
+
 
   previousSignalValid = true;
 }

@@ -369,8 +369,37 @@ uint16_t detectFS()
   }
 
   /*
-   * 同じ候補が連続して検出された場合だけ、
-   * detectedAudioModeとlastValidFSを更新する。
+   * 確定判定を待たず、現在の確定状態と異なる候補が
+   * 1回でも検出された時点でCPLDをミュートする。
+   *
+   * DSD→PCM切替時のノイズ防止では、
+   * ミュート解除よりも、この先行ミュートが重要。
+   */
+  bool audioMayBeChanging =
+    (candidateAudioMode == AUDIO_MODE_NONE) ||
+    (candidateAudioFS == 0) ||
+    (candidateAudioMode != detectedAudioMode) ||
+    (candidateAudioFS != lastValidFS);
+
+  if (audioMayBeChanging) {
+    setCpldMute(true);
+    cpldEarlyMuteActive = true;
+
+#if AUDIO_DEBUG_NOIZE
+    Serial.print("Early mute: confirmed=");
+    Serial.print((int)detectedAudioMode);
+    Serial.print("/");
+    Serial.print(lastValidFS);
+
+    Serial.print(", candidate=");
+    Serial.print((int)candidateAudioMode);
+    Serial.print("/");
+    Serial.println(candidateAudioFS);
+#endif
+  }
+  /*
+   * モードとFsの正式な変更は、
+   * 従来どおり連続一致後に確定する。
    */
   return stabilizeAudioDetection(
     candidateAudioMode,

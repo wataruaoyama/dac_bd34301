@@ -255,6 +255,7 @@ void sequenceFour() {
   // DACとクロックが安定してからCPLDミュートを解除
   delay(CPLD_MUTE_RELEASE_DELAY_MS);
   setCpldMute(false);
+  cpldEarlyMuteActive = false;
 }
 
 void sequenceFive() {
@@ -274,4 +275,5 @@ void sequenceFive() {
   // DACとDSDクロックが安定してからCPLDミュートを解除
   delay(CPLD_MUTE_RELEASE_DELAY_MS);
   setCpldMute(false);
+  cpldEarlyMuteActive = false;
 }
