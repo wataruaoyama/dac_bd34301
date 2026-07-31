@@ -252,55 +252,81 @@ uint16_t FSR = detectFS();
 #endif
 
 static bool previousSignalValid = false;
+static uint8_t sameFormatRecoveryCount = 0;
 
 bool signalValid =
   (detectedAudioMode != AUDIO_MODE_NONE) &&
   (FSR != 0);
 
 if (!signalValid) {
-  // 無信号になったら即ミュート
+  // 無信号中はCPLDミュートを維持
   setCpldMute(true);
 
   cpldEarlyMuteActive = true;
   previousSignalValid = false;
+  sameFormatRecoveryCount = 0;
 }
 else {
-  // PCM/DSDモードをCPLDへ通知
   /*
-  setCpldDsdMode(
-    detectedAudioMode == AUDIO_MODE_DSD
-  );
-  */
+   * ここではDSD_MODEを変更しない。
+   *
+   * PCM：sequenceTwo()
+   * DSD：sequenceThree()
+   *
+   * で変更する。
+   */
 
-  // DAC設定変更が必要なら、modeSwitch()内で
-  // sequenceOne()～sequenceFive()が実行される
   modeSwitch(FSR, digiFil, count);
 
-  /*
-  * Early mute後に同じモード・同じFsへ戻った場合、
-  * modeSwitch()では再設定されないため、ここで解除する。
-  */
-
-  if ((!previousSignalValid) || cpldEarlyMuteActive) {
-
-  #if AUDIO_DEBUG_NOIZE
-    Serial.println("Loop wanted to release CPLD mute");
-  #endif
-
-    // delay(CPLD_MUTE_RELEASE_DELAY_MS);
-    // setCpldMute(false);
-
-  
-    // cpldEarlyMuteActive = false;
+  if (!cpldEarlyMuteActive) {
+    /*
+     * 通常再生中、またはmodeSwitch()のシーケンスで
+     * すでにミュート解除済み。
+     */
+    sameFormatRecoveryCount = 0;
   }
+  else {
+    /*
+     * 同じモード・同じFsへ復帰しているか確認する。
+     */
+    bool sameFormatStable =
+      (candidateAudioMode == detectedAudioMode) &&
+      (candidateAudioFS == FSR) &&
+      (candidateAudioMode != AUDIO_MODE_NONE) &&
+      (candidateAudioFS != 0);
 
+    if (sameFormatStable) {
+      if (sameFormatRecoveryCount <
+          AUDIO_DETECT_STABLE_COUNT) {
+        sameFormatRecoveryCount++;
+      }
+    }
+    else {
+      sameFormatRecoveryCount = 0;
+    }
+
+    if (sameFormatRecoveryCount >=
+        AUDIO_DETECT_STABLE_COUNT) {
+
+      delay(CPLD_MUTE_RELEASE_DELAY_MS);
+      setCpldMute(false);
+
+      cpldEarlyMuteActive = false;
+      sameFormatRecoveryCount = 0;
+
+#if AUDIO_DEBUG_NOIZE
+      Serial.println(
+        "CPLD mute released after stable same-format recovery");
+#endif
+    }
+  }
 
   previousSignalValid = true;
 }
 
 messageOut(FSR, digiFil);
 
-  delay(10);
+delay(10);
 }
 
 uint8_t i2cRead(uint8_t sladr, uint8_t regadr){

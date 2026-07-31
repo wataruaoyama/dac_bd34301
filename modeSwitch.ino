@@ -229,7 +229,6 @@ void sequenceThree(uint16_t FS) {
 
   delayMicroseconds(100);
 
-  for (i = 0; i <= ptrSlave; i++) {
   for(i=0; i<=ptrSlave; i++) {
     i2cWrite(BD34301_CHIP[i], Clock1, 0x00);
     i2cWrite(BD34301_CHIP[i], Clock2, 0x00);
@@ -260,30 +259,60 @@ void sequenceThree(uint16_t FS) {
 void sequenceFour() {
   uint8_t i;
 
-  // setCpldDsdMode(false);
-
   for (i = 0; i <= ptrSlave; i++) {
-    i2cWrite(BD34301_CHIP[i], SoftwareReset, 0x01);
-    i2cWrite(BD34301_CHIP[i], DigitalPower, 0x01);
-    i2cWrite(BD34301_CHIP[i], RAMClear, 0x80);
-    i2cWrite(BD34301_CHIP[i], RAMClear, 0x00);
-    // i2cWrite(BD34301_CHIP[i], Mute, 0x03);
-    displayMute = false;
+    i2cWrite(
+      BD34301_CHIP[i],
+      SoftwareReset,
+      0x01
+    );
+
+    i2cWrite(
+      BD34301_CHIP[i],
+      DigitalPower,
+      0x01
+    );
+
+    i2cWrite(
+      BD34301_CHIP[i],
+      RAMClear,
+      0x80
+    );
+
+    i2cWrite(
+      BD34301_CHIP[i],
+      RAMClear,
+      0x00
+    );
+
+    displayMute = true;
   }
 
-#if AUDIO_DEBUG_NOIZE
-  Serial.println("PCM configured; waiting 1000 ms");
-#endif
+  // CPLDからPCMゼロを流した状態で待つ
+  delay(CPLD_MUTE_RELEASE_DELAY_MS);
 
-  delay(1000);
+  // 先にBD34301内部ミュートを解除
+  for (i = 0; i <= ptrSlave; i++) {
+    i2cWrite(
+      BD34301_CHIP[i],
+      Mute,
+      0x03
+    );
+  }
 
-#if AUDIO_DEBUG_NOIZE
-  Serial.println("PCM CPLD mute release NOW");
-#endif
+  // PCMゼロを流したままさらに待つ
+  delay(100);
 
-  // setCpldMute(false);
+  // 最後に実PCMデータへ戻す
+  setCpldMute(false);
+
+  displayMute = false;
   cpldEarlyMuteActive = false;
+
+#if AUDIO_DEBUG_NOIZE
+  Serial.println("PCM mute sequence completed");
+#endif
 }
+
 
 void sequenceFive() {
   uint8_t i;
