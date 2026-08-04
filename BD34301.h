@@ -7,9 +7,18 @@
 #define pwLED 25
 #define DP 5
 
-// ESP32 -> CPLD デジタルミュート制御
-#define MUTE_REQ_PIN 26   // HIGH: mute、LOW: normal
-#define DSD_MODE_PIN 33   // HIGH: DSD、LOW: PCM
+// -----------------------------------------------------------------------------
+// CPLD write register 3
+//
+// 注意：CPLDのreg3はread側とwrite側が別レジスタ。
+// read-modify-writeは使用せず、ESP32側のシャドーレジスタで管理する。
+// -----------------------------------------------------------------------------
+#define CPLD_REG_CONTROL       0x03
+
+#define CPLD_REG3_MCLK_RUN     0x01  // D0
+#define CPLD_REG3_MUTE_REQ     0x02  // D1: 1=MUTE
+#define CPLD_REG3_DSD_MODE     0x04  // D2: 1=DSD
+#define CPLD_REG3_RESETB       0x80  // D7
 
 #define CPLD_MUTE_RELEASE_DELAY_MS 100
 
@@ -265,6 +274,7 @@ bool cpldEarlyMuteActive = false;
 
 uint8_t HWCNF[12]; //{DEVNAME, INSEL, DIF, MONO_ST, DSDF, INPOL, DEM, OSR, HPC, PAC, OPT, CHIP_VERSION};
 uint8_t ptrSlave;
+
 
 // Timer 
 volatile int timeCounter1;

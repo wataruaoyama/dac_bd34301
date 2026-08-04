@@ -14,7 +14,27 @@
 #define SCL 22
 
 SO2002A_I2C oled(0x3D);
-// U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, SCL, SDA, /* reset=*/ U8X8_PIN_NONE);
+
+/*
+ * CPLD書き込みレジスタ3のシャドー値。
+ *
+ * 起動時は：
+ *   D1 MUTE_REQ = 1
+ *   D2 DSD_MODE = 0（PCM）
+ *   D0 MCLK_RUN = 0
+ *   D7 RESETB   = 0
+ */
+static uint8_t cpldReg3Shadow =
+  CPLD_REG3_MUTE_REQ;
+
+/*
+ * 最後に正常送信できた値。
+ * 0xFFにして、最初のcommitを必ず実行させる。
+ */
+static uint8_t cpldReg3LastSent = 0xFF;
+
+bool commitCpldReg3();
+bool setCpldReg3Bit(uint8_t mask, bool bitOn);
 
 void setup() {
   pinMode(upSwitch,INPUT);
@@ -24,17 +44,9 @@ void setup() {
   pinMode(pwLED, OUTPUT);
   pinMode(DP, INPUT);
   pinMode(APPLE_PAIR_RESET_PIN, INPUT_PULLUP);
-  pinMode(MUTE_REQ_PIN, OUTPUT);
-  pinMode(DSD_MODE_PIN, OUTPUT);
 
   pinMode(AUDIO_BCLK_PIN, INPUT);
   pinMode(AUDIO_LRCK_PIN, INPUT);
-
-  // 起動直後は必ずミュート
-  digitalWrite(MUTE_REQ_PIN, HIGH);
-
-  // 初期状態はPCM扱い
-  digitalWrite(DSD_MODE_PIN, LOW);
   
   // Setup timer interrupt
   // Timer: interrupt time and event setting. 
@@ -91,10 +103,36 @@ void setup() {
  
   delay(500);
  
-  i2cWrite(CPLD_ADR, 0x03, 0x01); // MCLKの停止を解除
-  i2cWrite(CPLD_ADR, 0x03, 0x81); // RESETB解除　
-  
+  /*
+  * CPLD書き込みreg3を初期化。
+  *
+  * 初期状態：
+  *   D7 RESETB   = 0
+  *   D2 DSD_MODE = 0（PCM）
+  *   D1 MUTE_REQ = 1（MUTE）
+  *   D0 MCLK_RUN = 0
+  */
+  cpldReg3Shadow = CPLD_REG3_MUTE_REQ;
+  cpldReg3LastSent = 0xFF;
+
+  /*
+  * MCLK停止解除。
+  * 送信値：0x03
+  * D1=MUTEを維持したままD0をセットする。
+  */
+  setCpldReg3Bit(CPLD_REG3_MCLK_RUN, true);
+
+  delay(1);
+
+  /*
+  * RESETB解除。
+  * 送信値：0x83
+  * MUTEはまだ維持する。
+  */
+  setCpldReg3Bit(CPLD_REG3_RESETB, true);
+
   delay(10);
+  
 
   /* コンフィグピンのステータスを取得 */
   getInitialSetting(); 
@@ -104,9 +142,6 @@ void setup() {
 
   // デバッグ用のLEDを点灯
   digitalWrite(pwLED,HIGH);
-
-  
-  // irrecv.enableIRIn(); // Start the receiver
 
   IrReceiver.begin(IR_RECEIVE_PIN, ENABLE_LED_FEEDBACK);
 
@@ -127,18 +162,12 @@ void setup() {
   // 常にUSBを優先
   if ((HWCNF[10] == 0x00)) {  // USB ans XH
     i2cWrite(CPLD_ADR, 0x00, 0x00);
-    // digitalWrite(INSEL0, LOW);
-    // digitalWrite(INSEL1, LOW);
     }
   else if (HWCNF[10] == 0x40) { // USB,XH and RJ45
     i2cWrite(CPLD_ADR, 0x00, 0x00);
-    // digitalWrite(INSEL0, LOW);
-    // digitalWrite(INSEL1, LOW);
   }
   else if (HWCNF[10] == 0xC0) {
     i2cWrite(CPLD_ADR, 0x00, 0x00);
-    // digitalWrite(INSEL0, LOW);
-    // digitalWrite(INSEL1, LOW);
   }
 
   /* 電源立ち上げシーケンス */
@@ -344,10 +373,69 @@ uint8_t i2cWrite(uint8_t sladr, uint8_t regadr, uint8_t wdata){
   return Wire.endTransmission();
 }
 
-uint8_t detectBitClock() {
-  cpld.sampleRate = i2cRead(CPLD_ADR, 0x03);
-  uint8_t bck16 = cpld.sampleRate & 0x80;
-  return(bck16);
+/*
+ * CPLD書き込みレジスタ3のシャドー値を送信する。
+ *
+ * reg3のread側は状態読み出し用の別レジスタなので、
+ * i2cRead(reg3)によるread-modify-writeは絶対に行わない。
+ */
+bool commitCpldReg3()
+{
+  // 同じ値ならI2Cアクセスを省略する
+  if (cpldReg3Shadow == cpldReg3LastSent) {
+    return true;
+  }
+
+  uint8_t result = i2cWrite(
+    CPLD_ADR,
+    CPLD_REG_CONTROL,
+    cpldReg3Shadow
+  );
+
+  if (result == 0) {
+    cpldReg3LastSent = cpldReg3Shadow;
+    return true;
+  }
+
+#if AUDIO_DEBUG_NOIZE
+  Serial.print("CPLD reg3 write error: ");
+  Serial.print(result);
+  Serial.print(", data=0x");
+
+  if (cpldReg3Shadow < 0x10) {
+    Serial.print('0');
+  }
+
+  Serial.println(cpldReg3Shadow, HEX);
+#endif
+
+  return false;
+}
+
+/*
+ * CPLD書き込みreg3の指定ビットを変更する。
+ */
+bool setCpldReg3Bit(uint8_t mask, bool bitOn)
+{
+  uint8_t previousValue = cpldReg3Shadow;
+
+  if (bitOn) {
+    cpldReg3Shadow |= mask;
+  }
+  else {
+    cpldReg3Shadow &= static_cast<uint8_t>(~mask);
+  }
+
+  if (commitCpldReg3()) {
+    return true;
+  }
+
+  /*
+   * I2C書き込み失敗時は、シャドー値を以前の状態へ戻す。
+   * 次回の呼び出しで再試行できるようにする。
+   */
+  cpldReg3Shadow = previousValue;
+  return false;
 }
 
 void getInitialSetting() {
@@ -408,16 +496,28 @@ uint8_t readChipVersion() {
 
 void setCpldMute(bool muteOn)
 {
-  digitalWrite(
-    MUTE_REQ_PIN,
-    muteOn ? HIGH : LOW
+  /*
+   * CPLD write-reg3 D1
+   *
+   * 1：デジタルミュートON
+   * 0：デジタルミュートOFF
+   */
+  setCpldReg3Bit(
+    CPLD_REG3_MUTE_REQ,
+    muteOn
   );
 }
 
 void setCpldDsdMode(bool dsdMode)
 {
-  digitalWrite(
-    DSD_MODE_PIN,
-    dsdMode ? HIGH : LOW
+  /*
+   * CPLD write-reg3 D2
+   *
+   * 1：DSDモード
+   * 0：PCMモード
+   */
+  setCpldReg3Bit(
+    CPLD_REG3_DSD_MODE,
+    dsdMode
   );
 }
