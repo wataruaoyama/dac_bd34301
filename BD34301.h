@@ -23,7 +23,7 @@
 #define CPLD_MUTE_RELEASE_DELAY_MS 100
 
 #define AUDIO_DEBUG 0
-#define AUDIO_DEBUG_NOIZE 1
+#define AUDIO_DEBUG_NOIZE 0
 
 // -----------------------------------------------------------------------------
 // Audio signal detector

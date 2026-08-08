@@ -295,11 +295,13 @@ void controlByIR()
 
         irHoldCommand = 0;
 
-        if (digiFil == 1) {
-          digiFil = 0;
-        }
-        else {
-          digiFil = 1;
+        if (dsdOn != 1) {
+          if (digiFil == 1) {
+            digiFil = 0;
+          }
+          else {
+            digiFil = 1;
+          }
         }
       }
 
@@ -535,11 +537,13 @@ void controlByIR()
 
       irHoldCommand = 0;
 
-      if (digiFil == 1) {
-        digiFil = 0;
-      }
-      else {
-        digiFil = 1;
+      if (dsdOn != 1) {
+        if (digiFil == 1) {
+          digiFil = 0;
+        }
+        else {
+          digiFil = 1;
+        }
       }
     }
 

@@ -2,7 +2,7 @@ uint8_t changeFilter() {
   bool state = digitalRead(filterSwitch);
   static bool buttonState = HIGH;
   
-  if (DSDON == 0x01) oled.print(filterBlank);
+  if (dsdOn == 0x01) oled.print(filterBlank);
   else if (digiFil == 1) {
     if ((buttonState == HIGH) && (state == LOW)) digiFil = 0;
   }
